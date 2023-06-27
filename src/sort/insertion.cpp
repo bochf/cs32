@@ -1,16 +1,20 @@
 #include "insertion.h"
+#include "tracker.h"
+
+#include <vector>
+
+using namespace std;
 
 namespace CS32
 {
-    void InsertionSort::sort(int array[], int len)
+    void InsertionSort::sort(vector<int> &array, Tracker &tracker)
     {
-        if (len <= 0)
+        if (array.size() < 2)
         {
             return;
         }
 
-        int endOfSorted = 0;
-        for (int startOfUnsort = 1; startOfUnsort < len; ++startOfUnsort)
+        for (int startOfUnsort = 1; startOfUnsort < array.size(); ++startOfUnsort)
         {
             int key = array[startOfUnsort];
             int current = startOfUnsort;
@@ -18,6 +22,7 @@ namespace CS32
             {
                 array[current] = array[current-1];
                 --current;
+                tracker.increaseStep();
             }
             
             array[current] = key;
