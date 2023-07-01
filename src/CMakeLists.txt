@@ -1,3 +1,0 @@
-add_subdirectory(sort)
-add_subdirectory(performance_analysis)
-add_subdirectory(project1)

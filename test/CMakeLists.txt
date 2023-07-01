@@ -1,2 +1,0 @@
-add_subdirectory(sort)
-add_subdirectory(project1)
