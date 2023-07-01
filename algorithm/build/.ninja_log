@@ -1,0 +1,8 @@
+# ninja log v5
+0	245	1688008358249217000	src/sort/CMakeFiles/sort.dir/insertion.cpp.o	37e87d7a5583c650
+0	277	1688008358279217000	src/sort/CMakeFiles/sort.dir/merge.cpp.o	74d174b188bd6bf0
+0	386	1688008358389217000	src/performance_analysis/CMakeFiles/perf.dir/tracker.cpp.o	97771641994c7898
+386	399	1688008358399217000	src/performance_analysis/libperf.a	cc48f8b46c88c45d
+399	413	1688008358409217000	src/sort/libsort.a	6e09d7d7177e01be
+1	1037	1688008359039217000	test/sort/CMakeFiles/test_sort.dir/test_sort.cpp.o	3278861d3952af1e
+1037	1253	1688008359249217000	test/sort/test_sort	12684f9c5e3045f0

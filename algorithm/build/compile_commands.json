@@ -1,0 +1,22 @@
+[
+{
+  "directory": "/home/josh/proj/homework/cs32/algorithm/build",
+  "command": "/usr/bin/g++ -I/home/josh/proj/homework/cs32/algorithm/src/sort/. -I/home/josh/proj/homework/cs32/algorithm/src/performance_analysis/. -g -o src/sort/CMakeFiles/sort.dir/insertion.cpp.o -c /home/josh/proj/homework/cs32/algorithm/src/sort/insertion.cpp",
+  "file": "/home/josh/proj/homework/cs32/algorithm/src/sort/insertion.cpp"
+},
+{
+  "directory": "/home/josh/proj/homework/cs32/algorithm/build",
+  "command": "/usr/bin/g++ -I/home/josh/proj/homework/cs32/algorithm/src/sort/. -I/home/josh/proj/homework/cs32/algorithm/src/performance_analysis/. -g -o src/sort/CMakeFiles/sort.dir/merge.cpp.o -c /home/josh/proj/homework/cs32/algorithm/src/sort/merge.cpp",
+  "file": "/home/josh/proj/homework/cs32/algorithm/src/sort/merge.cpp"
+},
+{
+  "directory": "/home/josh/proj/homework/cs32/algorithm/build",
+  "command": "/usr/bin/g++ -I/home/josh/proj/homework/cs32/algorithm/src/performance_analysis/. -g -o src/performance_analysis/CMakeFiles/perf.dir/tracker.cpp.o -c /home/josh/proj/homework/cs32/algorithm/src/performance_analysis/tracker.cpp",
+  "file": "/home/josh/proj/homework/cs32/algorithm/src/performance_analysis/tracker.cpp"
+},
+{
+  "directory": "/home/josh/proj/homework/cs32/algorithm/build",
+  "command": "/usr/bin/g++ -I/home/josh/proj/homework/cs32/algorithm/src/sort/. -I/home/josh/proj/homework/cs32/algorithm/src/performance_analysis/. -g -o test/sort/CMakeFiles/test_sort.dir/test_sort.cpp.o -c /home/josh/proj/homework/cs32/algorithm/test/sort/test_sort.cpp",
+  "file": "/home/josh/proj/homework/cs32/algorithm/test/sort/test_sort.cpp"
+}
+]
