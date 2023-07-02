@@ -1,9 +1,10 @@
+#include "tracker.h"
+#include "utils.h"
+
 #include <string>
 #include <chrono>
 #include <iostream>
 #include <iomanip>
-
-#include "tracker.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -26,7 +27,7 @@ namespace CS32
     duration<double> diff = end - m_start;
     cout.imbue(std::locale("en_US.UTF8"));
     cout << m_algorithmName << " processes data size=" << m_dataSize
-         << ", repeats " << m_steps << " times, takes " << setprecision(6)
+         << ", repeats " << humanize(m_steps) << " times, takes " << setprecision(6)
          << diff.count() * 1000 << " ms." << endl;
   }
 }

@@ -13,10 +13,12 @@ using namespace std;
 
 namespace CS32
 {
-    class TestSort : public Test
+    template <typename ALG>
+    class TestSortFixture : public Test
     {
-    protected:
+    public:
         vector<vector<int>> m_data;
+        ALG m_alg;
 
         void printData(const vector<int> &data)
         {
@@ -79,46 +81,28 @@ namespace CS32
         }
     };
 
-    TEST_F(TestSort, TestInsertion)
-    {
-        InsertionSort algorithm;
+    using Algorithms = Types<MergeSort, InsertionSort>;
+    TYPED_TEST_SUITE(TestSortFixture, Algorithms);
 
-        for (auto &array : m_data)
+    TYPED_TEST(TestSortFixture, Basic)
+    {
+        for (auto &array : this->m_data)
         {
             NoopTracker tracker;
-            algorithm.sort(array, tracker);
+            this->m_alg.sort(array, tracker);
         }
     }
 
-    TEST_F(TestSort, TestMerge)
+    TYPED_TEST(TestSortFixture, Performance)
     {
-        MergeSort algorithm;
-        for (auto &array : m_data)
-        {
-            NoopTracker tracker;
-            algorithm.sort(array, tracker);
-        }
-    }
-
-    TEST_F(TestSort, PerformanceTest)
-    {
-        const size_t len = 1 << 10;
+        const size_t len = 1 << 12;
         const size_t range = 10000;
 
         {
-            m_data.clear();
-            generateData(len, range);
-            InsertionSort algorithm;
-            TimeTracker tracker("InsertionSort", len);
-            algorithm.sort(m_data.back(), tracker);
-        }
-
-        {
-            m_data.clear();
-            generateData(len, range);
-            MergeSort algorithm;
-            TimeTracker tracker("MergeSort", len);
-            algorithm.sort(m_data.back(), tracker);
+            this->m_data.clear();
+            this->generateData(len, range);
+            TimeTracker tracker(this->m_alg.name(), len);
+            this->m_alg.sort(this->m_data.back(), tracker);
         }
     }
 }
