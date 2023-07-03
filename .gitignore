@@ -401,3 +401,4 @@ project1/.vscode
 project1/build
 algorithm/build
 algorithm/.vscode/settings.json
+algorithm/.editorconfig

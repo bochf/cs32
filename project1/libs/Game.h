@@ -3,8 +3,7 @@
 
 class Arena;
 
-class Game
-{
+class Game {
 public:
   // Constructor/destructor
   Game(int rows, int cols, int nRobots);

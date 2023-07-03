@@ -95,7 +95,7 @@ namespace CS32
 
     TYPED_TEST(TestSortFixture, Performance)
     {
-        const size_t len = 1 << 12;
+        const size_t len = 1 << 15;
         const size_t range = 10000;
 
         {

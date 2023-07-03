@@ -12,12 +12,10 @@
 
 using namespace std;
 
-Game::Game(int rows, int cols, int nRobots)
-{
-  if (nRobots > MAXROBOTS)
-  {
-    cout << "***** Trying to create Game with " << nRobots
-         << " robots; only " << MAXROBOTS << " are allowed!" << endl;
+Game::Game(int rows, int cols, int nRobots) {
+  if (nRobots > MAXROBOTS) {
+    cout << "***** Trying to create Game with " << nRobots << " robots; only "
+         << MAXROBOTS << " are allowed!" << endl;
     exit(1);
   }
 
@@ -30,8 +28,7 @@ Game::Game(int rows, int cols, int nRobots)
   m_arena->addPlayer(rPlayer, cPlayer);
 
   // Populate with robots
-  while (nRobots > 0)
-  {
+  while (nRobots > 0) {
     int r = 1 + rand() % rows;
     int c = 1 + rand() % cols;
     // Don't put a robot where the player is
@@ -42,22 +39,16 @@ Game::Game(int rows, int cols, int nRobots)
   }
 }
 
-Game::~Game()
-{
-  delete m_arena;
-}
+Game::~Game() { delete m_arena; }
 
-void Game::play()
-{
+void Game::play() {
   Player *p = m_arena->player();
-  if (p == nullptr)
-  {
+  if (p == nullptr) {
     m_arena->display("");
     return;
   }
   string msg = "";
-  do
-  {
+  do {
     m_arena->display(msg);
     msg = "";
     cout << endl;
@@ -66,10 +57,8 @@ void Game::play()
     getline(cin, action);
     if (action.size() == 0)
       p->stand();
-    else
-    {
-      switch (action[0])
-      {
+    else {
+      switch (action[0]) {
       default:                // if bad move, nobody moves
         cout << '\a' << endl; // beep
         continue;
@@ -90,8 +79,7 @@ void Game::play()
           cout << '\a' << endl; // beep
           continue;
         }
-        switch (action[1])
-        {
+        switch (action[1]) {
         default:                // if bad direction, nobody moves
           cout << '\a' << endl; // beep
           continue;

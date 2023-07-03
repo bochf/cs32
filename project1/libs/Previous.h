@@ -3,8 +3,7 @@
 
 #include "globals.h"
 
-class Previous
-{
+class Previous {
 public:
   // Constructor/destructor
   Previous(int nRows, int nCols);

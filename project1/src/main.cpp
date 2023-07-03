@@ -5,8 +5,7 @@
 
 using namespace std;
 
-int main()
-{
+int main() {
   // Initialize the random number generator.  (You don't need to
   // understand how this works.)
   srand(static_cast<unsigned int>(time(0)));

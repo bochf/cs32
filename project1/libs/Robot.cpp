@@ -9,17 +9,14 @@
 
 using namespace std;
 
-Robot::Robot(Arena *ap, int r, int c)
-{
-  if (ap == nullptr)
-  {
+Robot::Robot(Arena *ap, int r, int c) {
+  if (ap == nullptr) {
     cout << "***** A robot must be in some Arena!" << endl;
     exit(1);
   }
-  if (r < 1 || r > ap->rows() || c < 1 || c > ap->cols())
-  {
-    cout << "***** Robot created with invalid coordinates (" << r << ","
-         << c << ")!" << endl;
+  if (r < 1 || r > ap->rows() || c < 1 || c > ap->cols()) {
+    cout << "***** Robot created with invalid coordinates (" << r << "," << c
+         << ")!" << endl;
     exit(1);
   }
   m_arena = ap;
@@ -28,21 +25,13 @@ Robot::Robot(Arena *ap, int r, int c)
   m_health = INITIAL_ROBOT_HEALTH;
 }
 
-int Robot::row() const
-{
-  return m_row;
-}
+int Robot::row() const { return m_row; }
 
-int Robot::col() const
-{
-  return m_col;
-}
+int Robot::col() const { return m_col; }
 
-void Robot::move()
-{
+void Robot::move() {
   // Attempt to move in a random direction; if we can't move, don't move
-  switch (rand() % 4)
-  {
+  switch (rand() % 4) {
   case UP:
     if (m_row > 1)
       m_row--;

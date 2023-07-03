@@ -4,8 +4,7 @@
 // forward declaration
 class Arena;
 
-class Robot
-{
+class Robot {
 public:
   // Constructor
   Robot(Arena *ap, int r, int c);

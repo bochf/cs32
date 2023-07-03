@@ -3,8 +3,7 @@
 #include "Previous.h"
 #include "globals.h"
 
-int main()
-{
+int main() {
   Arena a(2, 2);
   a.addPlayer(1, 1);
   a.player()->move(RIGHT);

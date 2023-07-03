@@ -3,15 +3,14 @@
 
 #include <string>
 
-#include "globals.h"
 #include "Previous.h"
+#include "globals.h"
 
 class Player;
 class Robot;
 class Previous;
 
-class Arena
-{
+class Arena {
 public:
   // Constructor/destructor
   Arena(int nRows, int nCols);

@@ -6,8 +6,7 @@
 // forward declaration
 class Arena;
 
-class Player
-{
+class Player {
 public:
   // Constructor
   Player(Arena *ap, int r, int c);
