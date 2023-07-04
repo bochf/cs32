@@ -7,6 +7,7 @@
 #include "heap.h"
 #include "insertion.h"
 #include "merge.h"
+#include "quick.h"
 #include "tracker.h"
 #include "utils.h"
 
@@ -60,7 +61,7 @@ public:
   }
 };
 
-using Algorithms = Types<InsertionSort, MergeSort, HeapSort>;
+using Algorithms = Types<InsertionSort, MergeSort, HeapSort, QuickSort>;
 TYPED_TEST_SUITE(TestSortFixture, Algorithms);
 
 TYPED_TEST(TestSortFixture, Basic) {
@@ -77,6 +78,15 @@ TYPED_TEST(TestSortFixture, Performance) {
   this->m_data.clear();
   this->generateData(len, range);
   TimeTracker tracker(this->m_alg.name(), len);
+  this->m_alg.sort(this->m_data.back(), tracker);
+}
+
+TYPED_TEST(TestSortFixture, Single) {
+  const size_t range = 10000;
+
+  this->m_data.clear();
+  this->generateData(10, 20);
+  TimeTracker tracker(this->m_alg.name(), 10);
   this->m_alg.sort(this->m_data.back(), tracker);
 }
 } // namespace CS32

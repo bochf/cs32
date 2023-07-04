@@ -2,6 +2,7 @@
 #include "tracker.h"
 #include "utils.h"
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -30,7 +31,7 @@ void Heap::heapify(int pos, int heapSize) {
     tmp = compare(tmp, right);
 
   if (tmp != pos) {
-    swap(m_array, tmp, pos);
+    swap(m_array[tmp], m_array[pos]);
     heapify(tmp, heapSize);
   }
 }
@@ -79,7 +80,7 @@ void HeapSort::sort(vector<int>   &array,
 
   // sort the array based on heap
   for (int i = len - 1; i >= 0; --i) {
-    swap(array, i, 0);
+    swap(array[i], array[0]);
     heap.heapify(0, i);
   }
 }

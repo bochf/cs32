@@ -25,18 +25,6 @@ string humanize(uint64_t num) {
   return oss.str();
 }
 
-void swap(vector<int> &array, size_t first, size_t second) {
-  size_t len = array.size();
-  if (len < 1)
-    return;
-  if (len < first || len < second || first == second)
-    return;
-
-  int tmp       = array[first];
-  array[first]  = array[second];
-  array[second] = tmp;
-}
-
 void printData(const vector<int> &data) {
   for (int value : data) {
     cout << value << " ";
