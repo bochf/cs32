@@ -402,3 +402,5 @@ project1/build
 algorithm/build
 algorithm/.vscode/settings.json
 algorithm/.editorconfig
+algorithm/.vscode/tasks.json
+algorithm/.vscode/c_cpp_properties.json
