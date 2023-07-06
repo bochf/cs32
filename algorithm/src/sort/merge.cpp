@@ -51,6 +51,8 @@ namespace CS32
 
   void mergeSort(int array[], int left, int right, Tracker& tracker)
   {
+    tracker.increaseStep();
+    
     if (left >= right)
     { // less than 2 elements, the array is sorted
       return;
