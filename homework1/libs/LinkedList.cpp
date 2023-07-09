@@ -28,7 +28,7 @@ LinkedList::~LinkedList() {
   Node *tmp;
   while (nullptr != head) {
     tmp = head->next;
-    delete (head);
+    delete head;
     head = tmp;
   }
   m_count = 0;
