@@ -1,0 +1,2 @@
+add_executable(homework1 main.cpp)
+target_link_libraries(homework1 linked_list)
