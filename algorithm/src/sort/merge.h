@@ -10,7 +10,7 @@ namespace CS32
 
   struct MergeSort
   {
-    void sort(std::vector<int> &array, Tracker &tracker);
+    void        sort(std::vector<int> &array, Tracker &tracker) const;
     std::string name() const { return "Merge Sort"; }
   };
 }

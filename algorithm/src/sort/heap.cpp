@@ -61,9 +61,9 @@ bool validHeap(const vector<int> &array) {
 /// Class HeapSort
 ///
 
-void HeapSort::sort(vector<int>   &array,
-                    Tracker       &tracker,
-                    Heap::SortType sortType) {
+void HeapSort::sort(vector<int> &array,
+                    Tracker     &tracker,
+                    SortType     sortType) const {
   tracker.increaseStep();
 
   size_t len = array.size();

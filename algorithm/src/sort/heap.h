@@ -10,9 +10,9 @@ class Tracker;
 #define RIGHT(i)  ((i) << 1) + 2
 #define PARENT(i) ((i)-1) >> 1
 
-struct Heap {
-  enum SortType { MAX_HEAP, MIN_HEAP };
+enum class SortType { MAX_HEAP, MIN_HEAP };
 
+struct Heap {
   Heap(std::vector<int> &array, Tracker &tracker, SortType sortType);
 
   /// @brief compare 2 elements and return the index of larger or smaller based
@@ -21,8 +21,7 @@ struct Heap {
   /// @param second the index of the second element
   /// @return the index of the larger/smaller element
   size_t compare(size_t first, size_t second) const {
-    // return m_comparator(m_array[first], m_array[second]) ? first : second;
-    if (MAX_HEAP == m_type)
+    if (SortType::MAX_HEAP == m_type)
       return m_array[first] > m_array[second] ? first : second;
     else
       return m_array[first] < m_array[second] ? first : second;
@@ -39,12 +38,11 @@ struct Heap {
 };
 
 struct HeapSort {
-  void        sort(std::vector<int> &array,
-                   Tracker          &tracker,
-                   Heap::SortType    sortType = Heap::SortType::MAX_HEAP);
-  std::string name() const { return "Heap Sort"; }
+  void sort(std::vector<int> &array,
+            Tracker          &tracker,
+            SortType          sortType = SortType::MAX_HEAP) const;
 
-private:
+  std::string name() const { return "Heap Sort"; }
 };
 } // namespace CS32
 #endif

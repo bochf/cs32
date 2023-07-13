@@ -101,13 +101,12 @@ void LinkedList::reverseList() {
     return;
 
   Node *prev(nullptr);
-  Node *current(head);
   Node *next;
-  while (current != nullptr) {
-    next          = current->next;
-    current->next = prev;
-    prev          = current;
-    current       = next;
+  while (head != nullptr) {
+    next       = head->next;
+    head->next = prev;
+    prev       = head;
+    head       = next;
   }
   head = prev;
 }

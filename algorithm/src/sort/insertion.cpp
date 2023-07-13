@@ -6,7 +6,7 @@
 using namespace std;
 
 namespace CS32 {
-void InsertionSort::sort(vector<int> &array, Tracker &tracker) {
+void InsertionSort::sort(vector<int> &array, Tracker &tracker) const {
   if (array.size() < 2) {
     return;
   }
