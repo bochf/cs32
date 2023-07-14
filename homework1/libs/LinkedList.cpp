@@ -76,7 +76,7 @@ void LinkedList::printList() const {
     if (node) {
       cout << " ";
     }
-  }
+  } 
   cout << endl;
 }
 

@@ -405,3 +405,5 @@ algorithm/.editorconfig
 algorithm/.vscode/tasks.json
 algorithm/.vscode/c_cpp_properties.json
 homework1/.vscode/settings.json
+homework1/build/
+.gitignore
