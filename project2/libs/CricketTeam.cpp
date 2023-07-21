@@ -52,12 +52,12 @@ CricketTeam::CricketTeam(const CricketTeam &other) {
 }
 
 CricketTeam::~CricketTeam() {
-  Node *p    = start->next;
-  Node *next = p->next;
-  while (p != rear) {
-    delete p;
-    p    = next;
+  Node *p = start;
+  Node *next;
+  while (p != nullptr) {
     next = p->next;
+    delete p;
+    p = next;
   }
 }
 
