@@ -407,3 +407,5 @@ algorithm/.vscode/c_cpp_properties.json
 homework1/.vscode/settings.json
 homework1/build/
 .gitignore
+project2/build/
+project2/.vscode/
