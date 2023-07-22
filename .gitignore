@@ -397,15 +397,15 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
+.gitignore
 project1/.vscode
 project1/build
 algorithm/build
-algorithm/.vscode/settings.json
+algorithm/.vscode
 algorithm/.editorconfig
-algorithm/.vscode/tasks.json
-algorithm/.vscode/c_cpp_properties.json
-homework1/.vscode/settings.json
+homework1/.vscode/
 homework1/build/
-.gitignore
 project2/build/
+homework2/.vscode/
+homework2/build/
 project2/.vscode/
