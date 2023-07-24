@@ -1,7 +1,12 @@
 #include "recursion.h"
+#include "test_utils.h"
 
 #include <algorithm>
+#include <iostream>
+#include <set>
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -43,32 +48,6 @@ TEST(TestRecursion, accountForADigit) {
   }
 }
 
-void validateEightClap(const string &origin, const string &result) {
-  size_t pos = 1;
-  while (pos < result.length()) {
-    if (result[pos] == '8') {
-      // if it is '8' then must be 2 '8'
-      EXPECT_EQ('8', result[pos + 1]);
-      // adjacencies of "88" should be the same
-      EXPECT_EQ(result[pos - 1], result[pos + 2]);
-      pos += 3;
-    } else {
-      // if it is not '8', then it must not be the same with the prior one
-      EXPECT_NE(result[pos], result[pos - 1]);
-      ++pos;
-    }
-  }
-
-  string copy;
-  auto   it =
-      copy_if(result.begin(), result.end(), copy.begin(), [](unsigned char c) {
-        return c != '8';
-      });
-  copy.erase(it, copy.end());
-  // the result removes all '8' should be the same as origin
-  EXPECT_EQ(origin, copy);
-}
-
 TEST(TestRecursion, eightClap) {
   string testParams[] = {"goodbye", "yyuu", "aaaa"};
 
@@ -78,8 +57,37 @@ TEST(TestRecursion, eightClap) {
   }
 }
 
-TEST(TestRecursion, coneHeads) {}
+TEST(TestRecursion, coneHeads) {
+  string testParams[] = {
+      "abc<ghj>789", "<x>7", "4agh<y>", "4agh<>", "", "<>", "><"};
 
-TEST(TestRecursion, conglomerateOfNumbers) {}
+  for (const auto &origin : testParams) {
+    string actualResult = coneHeads(origin);
+    validateConeHeads(origin, actualResult);
+  }
+}
+
+TEST(TestRecursion, conglomerateOfNumbers) {
+  vector<vector<int>> scenarios = {
+      {2, 4, 8},
+      {},
+      {-1, -2},
+      {-1,  2, 5},
+      {0, 0, 0, 0, 0, 0},
+      {24, 37, 95, 100, -66, 87, 203}
+  };
+
+  for (const auto &input : scenarios) {
+    set<int> possible;
+    set<int> impossible;
+    getAllSum(possible, impossible, input);
+    for (const int target : possible) {
+      ASSERT_TRUE(conglomerateOfNumbers(input.data(), input.size(), target));
+    }
+    for (const int target : impossible) {
+      ASSERT_FALSE(conglomerateOfNumbers(input.data(), input.size(), target));
+    }
+  }
+}
 
 TEST(TestRecursion, findAWay) {}
