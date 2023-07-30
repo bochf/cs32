@@ -13,6 +13,12 @@
 using namespace std;
 using namespace ::testing;
 
+void printMaze(const string maze[], size_t rows) {
+  for (size_t i = 0; i < rows; ++i) {
+    cerr << maze[i] << endl;
+  }
+}
+
 TEST(TestRecursion, product) {
   // list of m, n and the expected result of m * n
   unsigned int testParams[][2] = {
@@ -69,12 +75,12 @@ TEST(TestRecursion, coneHeads) {
 
 TEST(TestRecursion, conglomerateOfNumbers) {
   vector<vector<int>> scenarios = {
-      {2, 4, 8},
-      {},
-      {-1, -2},
-      {-1,  2, 5},
-      {0, 0, 0, 0, 0, 0},
-      {24, 37, 95, 100, -66, 87, 203}
+    {2, 4, 8},
+    {},
+    {-1, -2},
+    {-1,  2, 5},
+    {0, 0, 0, 0, 0, 0},
+    {24, 37, 95, 100, -66, 87, 203}
   };
 
   for (const auto &input : scenarios) {
@@ -90,4 +96,21 @@ TEST(TestRecursion, conglomerateOfNumbers) {
   }
 }
 
-TEST(TestRecursion, findAWay) {}
+TEST(TestRecursion, findAWay) {
+  string maze[] = {
+    "XXXXXXXXXXXXXXXXXXXXXXXX",
+    "X......................X",
+    "XXXX.XXXXXXXXXXXXXXXXXXX",
+    "X......................X",
+    "X..........XXXXXXXX....X",
+    "X..........X......X....X",
+    "X..........X...........X",
+    "XXXXXXXXXXXXXXXXXXXXXXXX",
+    "X......................X",
+    "XXXXXXXXXXXXXXXXXXXXXXXX"
+  };
+
+  bool result = findAWay(maze, 10, 24, 8, 22, 1, 22);
+  printMaze(maze, 10);
+  EXPECT_FALSE(result);
+}
