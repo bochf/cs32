@@ -1,10 +1,4 @@
-cmake_minimum_required(VERSION 3.22.0)
-project(cricketer VERSION 0.1.0 LANGUAGES CXX)
-
-add_subdirectory(src)
-add_subdirectory(libs)
-
-include(CTest)
-find_package(GTest REQUIRED)
-enable_testing()
-add_subdirectory(test)
+add_executable(test_cricketer test_cricketer.cpp)
+target_link_libraries(test_cricketer cricketer)
+target_link_libraries(test_cricketer GTest::gtest_main)
+add_test(NAME test_cricketer COMMAND $<TARGET_FILE : test_cricketer>)

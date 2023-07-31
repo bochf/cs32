@@ -398,14 +398,6 @@ FodyWeavers.xsd
 *.sln.iml
 
 .gitignore
-project1/.vscode
-project1/build
-algorithm/build
-algorithm/.vscode
-algorithm/.editorconfig
-homework1/.vscode/
-homework1/build/
-project2/build/
-homework2/.vscode/
-homework2/build/
-project2/.vscode/
+*/.editorconfig
+*/build/
+*/.vscode/

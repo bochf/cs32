@@ -55,32 +55,32 @@ string coneHeads(string str) {
 
 // Return true if the total of any combination of elements in
 // the array a equals the value of the target.
-//
+
 // Pseudocode Example:
 //  conglomerateOfNumbers({2, 4, 8}, 3, 10) => true
 //  conglomerateOfNumbers({2, 4, 8}, 3, 6)  => true
 //  conglomerateOfNumbers({2, 4, 8}, 3, 11) => false
 //  conglomerateOfNumbers({2, 4, 8}, 3, 0)  => true
 //  conglomerateOfNumbers({}, 0, 0)         => true
-// bool conglomerateOfNumbers(const int a[], int size, int target) {
-//   if (0 == target) {
-//     return true;
-//   }
+bool conglomerateOfNumbers(const int a[], int size, int target) {
+  if (0 == target) {
+    return true;
+  }
 
-//   if (0 == size) {
-//     return target == 0;
-//   }
+  if (0 == size) {
+    return target == 0;
+  }
 
-//   if (a[size - 1] == target) {
-//     return true;
-//   }
+  if (a[size - 1] == target) {
+    return true;
+  }
 
-//   if (conglomerateOfNumbers(a, size - 1, target)) {
-//     return true;
-//   }
+  if (conglomerateOfNumbers(a, size - 1, target)) {
+    return true;
+  }
 
-//   return conglomerateOfNumbers(a, size - 1, target - a[size - 1]);
-// }
+  return conglomerateOfNumbers(a, size - 1, target - a[size - 1]);
+}
 */
 
 bool findAWay(string maze[],
