@@ -1,34 +1,55 @@
 #include "anagrams.h"
 
 #include <fstream>
+#include <iostream>
 #include <string>
 
 using namespace std;
 
-const int MAXRESULTS   = 20;    // Max matches that can be found
-const int MAXDICTWORDS = 30000; // Max words that can be read in
-
-int vocabularyCreator(istream &dictfile, string dict[]) {
-  int    num = 0;
-  string word;
-
-  while (getline(dictfile, word) && num < MAXDICTWORDS) {
-    dict[num++] = word;
+int fillDict(istream &dictfile, string dict[], size_t maxSize) {
+  if (dictfile.eof() || maxSize == 0) {
+    return 0;
   }
 
-  int result = num;
-  while (num < MAXDICTWORDS) {
-    // clear the rest of the array if the words in the dictfile < MAXDICTWORDS
-    dict[num++] = "";
+  if (getline(dictfile, dict[0])) {
+    return fillDict(dictfile, &dict[1], maxSize - 1) + 1;
   }
-  return result;
-}
 
-int potentialSequences(std::string       word,
-                       const std::string dict[],
-                       int               size,
-                       std::string       results[]) {
   return 0;
 }
 
-void outcomeDisclosure(const std::string results[], int size) {}
+int vocabularyCreator(istream &dictfile, string dict[]) {
+  /// There is a potential stack space issue since we go through the file all
+  /// the way to the end.
+  /// @note the words stored in the `dict` is in reverse order
+
+  if (string word; getline(dictfile, word)) {
+    int num = vocabularyCreator(dictfile, dict);
+    if (num < MAXDICTWORDS) {
+      dict[num] = word;
+      return num + 1;
+    }
+
+    return num;
+  }
+  return 0;
+
+  // return fillDict(dictfile, dict, MAXDICTWORDS);
+}
+
+int potentialSequences(string       word,
+                       const string dict[],
+                       int          size,
+                       string       results[]) {
+  return 0;
+}
+
+void outcomeDisclosure(const string results[], int size) {
+  if (size < 1) {
+    cerr << endl;
+    return;
+  }
+
+  cerr << results[0] << " ";
+  outcomeDisclosure(&results[1], size - 1);
+}
