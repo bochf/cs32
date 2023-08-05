@@ -2,7 +2,9 @@
 #define __ANAGRAMS__
 
 #include <fstream>
+#include <functional>
 #include <string>
+#include <vector>
 
 const int MAXRESULTS   = 20;    // Max matches that can be found
 const int MAXDICTWORDS = 30000; // Max words that can be read in
