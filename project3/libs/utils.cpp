@@ -26,7 +26,7 @@ int fillDict(istream &dictfile, string dict[], size_t maxSize) {
   return 0;
 }
 
-void repeat(const function<void(int)> &iterator, int from, int to) {
+void repeat(const ITERATOR &iterator, size_t from, size_t to) {
   if (from >= to)
     return;
 
@@ -34,45 +34,86 @@ void repeat(const function<void(int)> &iterator, int from, int to) {
   repeat(iterator, from + 1, to);
 }
 
-/// @brief find a word in an array
-/// @param word the word to search
-/// @param dict the list of words
-/// @param size the number of words in the array
-/// @return position of the word in the array, -1 if not found
-bool searchWord(const string &word, const string dict[], int size, int step) {
+void permutate(Collector &collector, string &word, int pos) {
+  if (collector.full()) {
+    return;
+  }
 
+  if (pos + 1 >= word.length()) {
+    collector.add(word);
+    return;
+  }
+  if (!collector.partialMatch(word.substr(0, pos + 1))) {
+    // return earlier if the prefix can't be found in the dictionary
+    // no need to try the combinations under the same prefix
+    return;
+  }
+
+  auto iterator = [&collector, &word, &pos](int index) {
+    swap(word[pos], word[index]);
+    permutate(collector, word, pos + 1);
+    swap(word[pos], word[index]);
+  };
+  // permutate(collector, word, pos + 1);
+  repeat(iterator, pos, word.length());
+}
+
+void Collector::add(const string &word) {
+  if (!match(word, m_results.data(), m_results.size()) // not in the result
+      && match(word, m_cache, m_cacheSize, 100)        // in the dictionary
+  ) {
+    m_results.push_back(word);
+  }
+}
+
+size_t Collector::dumpResult(string results[]) {
+  auto dumper = [this, results](int i) { results[i] = m_results[i]; };
+  repeat(dumper, 0, m_results.size());
+  return m_results.size();
+}
+
+void Collector::copy(const string dict[], int size, size_t len) {
+  if (size > 0) {
+    if (const string &word = dict[size - 1]; word.length() == len) {
+      m_cache[m_cacheSize++] = word;
+    }
+    copy(dict, size - 1, len);
+  }
+}
+
+bool Collector::match(const string  &word,
+                      const ::string list[],
+                      size_t         size,
+                      size_t         steps) {
+  auto wholeWordMatch = [&word](const string &value) { return word == value; };
+  return search(wholeWordMatch, list, size, steps);
+}
+
+bool Collector::partialMatch(const string &word) {
+  auto prefixMatch = [&word](const string &value) {
+    return word == value.substr(0, word.length());
+  };
+  return search(prefixMatch, m_cache, m_cacheSize, 100);
+}
+
+bool Collector::search(const COND  &cond,
+                       const string list[],
+                       size_t       size,
+                       size_t       steps) {
   if (0 == size) {
     return false;
   }
 
-  if (size > step && step > 100) {
-    if (searchWord(word, dict, step)) {
+  if (size > steps && steps > 64) {
+    if (search(cond, list, steps)) {
       return true;
     }
-    return searchWord(word, &dict[step], size - step, step);
+    return search(cond, &list[steps], size - steps, steps);
   }
 
-  if (word == dict[size - 1]) {
+  if (cond(list[size - 1])) {
     return true;
   }
 
-  return searchWord(word, dict, size - 1, step);
-}
-
-void permutate(const function<int(const string &)> &resultProcessor,
-               string                              &word,
-               int                                  pos) {
-  if (pos + 1 >= word.length()) {
-    resultProcessor(word);
-    return;
-  }
-
-  // Reorg reorg(word, pos);
-  auto iterator = [&resultProcessor, &word, &pos](int index) {
-    swap(word[pos], word[index]);
-    permutate(resultProcessor, word, pos + 1);
-    swap(word[pos], word[index]);
-  };
-  permutate(resultProcessor, word, pos + 1);
-  repeat(iterator, pos + 1, word.length());
+  return search(cond, list, size - 1, steps);
 }

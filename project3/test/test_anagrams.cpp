@@ -119,11 +119,12 @@ protected:
 
 TEST_F(TestAnagram, testPermute) {
   loadDict("words.txt");
-  int count = potentialSequences("tea", dict, dictSize, results);
-  EXPECT_EQ(4, count);
+  const string word("tortoiseshell");
+  int          count = potentialSequences(word, dict, dictSize, results);
+  EXPECT_EQ(1, count);
   EXPECT_TRUE(isUnique());
-  for (size_t i = 0; i < 4; ++i) {
-    EXPECT_TRUE(anagram("tea", results[i]));
+  for (size_t i = 0; i < count; ++i) {
+    EXPECT_TRUE(anagram(word, results[i]));
   }
 }
 
