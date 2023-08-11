@@ -10,13 +10,6 @@
 using namespace std;
 
 //========================================================================
-//  Set this to false to skip the insertion sort tests; you'd do this if
-//  you're sorting so many items that insertion_sort would take more time
-//  than you're willing to wait.
-
-const bool TEST_INSERTION_SORT = true;
-
-//========================================================================
 
 //========================================================================
 // Timer t;                 // create a timer
@@ -98,8 +91,8 @@ const int NREADINGS = 150;
 
 struct Sensor {
   IdType id;
-  double avg;
   double readings[NREADINGS];
+  double avg;
   Sensor(IdType i) : id(i) {
     // create random sensor readings (from 0 to 99)
     for (size_t k = 0; k < NREADINGS; k++)
@@ -157,26 +150,68 @@ void insertion_sort(vector<Sensor> &s,
   // edition and messed it up.  See the errata page entry for page 313 at
   // http://homepage.cs.uri.edu/~carrano/WMcpp6e
 
-  // Just to show you how to use the second parameter, we'll write code
-  // that sorts only a vector of 2 elements.  (This is *not* the
-  // insertion sort algorithm.)
+  if (s.size() < 2) {
+    return;
+  }
 
-  // Note that if comp(x,y) is true, it means x must end up before y in the
-  // final ordering.
-  if (s.size() == 2 && comp(s[1], s[0]))
-    swap(s[0], s[1]);
+  for (size_t i = 1; i < s.size(); ++i) {
+    auto sensor = s[i];
+    // repeatly compare the sensor with each one in the sorted list backforward
+    // move the sorted element back if it is greater than the sensor
+    size_t j = i;
+    while (j > 0 && comp(sensor, s[j - 1])) {
+      // if the current sorted elemtent < sensor, move it back
+      s[j] = s[j - 1];
+      --j;
+    }
+    s[j] = sensor;
+  }
 }
 
 // Report the results of a timing test
 
 void report(string caption, double t, const vector<Sensor> &s) {
-  cout << t << " milliseconds; " << caption << "; first few sensors are"
-       << endl;
-  size_t n = s.size();
-  if (n > 5)
-    n = 5;
-  for (size_t k = 0; k < n; k++)
-    cout << " (" << s[k].id << ", " << s[k].avg << ")";
-  cout << endl;
-  return;
+  cout << t << " milliseconds; size " << s.size() << " " << caption << endl;
 }
+
+// Create an auxiliary copy of sensors, to faciliate the later reordering.
+// We create it in a local scope so that we also account for the
+// destruction time.
+void insertion_sort_ptr(vector<Sensor> &sensors) {
+  vector<Sensor> auxSensors(sensors);
+
+  // Create a vector of Sensor pointers, and set each pointer
+  // to point to the corresponding Sensor in auxSensors.
+  vector<Sensor *> p_sensors;
+  for (auto &sensor : auxSensors) {
+    p_sensors.emplace_back(&sensor);
+  }
+
+  // Sort the vector of pointers using the STL sort algorithm
+  // with compareSensorPtr as the ordering relationship.
+  // sort(p_sensors.begin(), p_sensors.end(), compareSensorPtr);
+
+  if (p_sensors.size() < 2) {
+    return;
+  }
+
+  for (size_t i = 1; i < p_sensors.size(); ++i) {
+    auto sensor = p_sensors[i];
+    // repeatly compare the sensor with each one in the sorted list backforward
+    // move the sorted element back if it is greater than the sensor
+    size_t j = i;
+    while (j > 0 && compareSensorPtr(sensor, p_sensors[j - 1])) {
+      // if the current sorted elemtent < sensor, move it back
+      p_sensors[j] = p_sensors[j - 1];
+      --j;
+    }
+    p_sensors[j] = sensor;
+  }
+  // Using the now-sorted vector of pointers, replace each Sensor
+  // in sensors with the Sensors from auxSensors in the correct
+  // order.
+  for (size_t i = 0; i < sensors.size(); ++i) {
+    sensors[i] = *p_sensors[i];
+  }
+
+} // auxSensors will be destroyed here
