@@ -124,23 +124,41 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
+    <ClInclude Include="Barrel.h" />
+    <ClInclude Include="Boulder.h" />
     <ClInclude Include="freeglut.h" />
     <ClInclude Include="freeglut_ext.h" />
     <ClInclude Include="freeglut_std.h" />
     <ClInclude Include="GameConstants.h" />
     <ClInclude Include="GameController.h" />
     <ClInclude Include="GameWorld.h" />
+    <ClInclude Include="Gold.h" />
     <ClInclude Include="GraphObject.h" />
+    <ClInclude Include="HardcoreProtester.h" />
+    <ClInclude Include="Protester.h" />
+    <ClInclude Include="RegularProtester.h" />
+    <ClInclude Include="Sonar.h" />
     <ClInclude Include="SoundFX.h" />
     <ClInclude Include="SpriteManager.h" />
     <ClInclude Include="StudentWorld.h" />
+    <ClInclude Include="WaterPool.h" />
+    <ClInclude Include="WaterSpurt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="Barrel.cpp" />
+    <ClCompile Include="Boulder.cpp" />
     <ClCompile Include="GameController.cpp" />
     <ClCompile Include="GameWorld.cpp" />
+    <ClCompile Include="Gold.cpp" />
+    <ClCompile Include="HardcoreProtester.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Protester.cpp" />
+    <ClCompile Include="RegularProtester.cpp" />
+    <ClCompile Include="Sonar.cpp" />
     <ClCompile Include="StudentWorld.cpp" />
+    <ClCompile Include="WaterPool.cpp" />
+    <ClCompile Include="WaterSpurt.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
