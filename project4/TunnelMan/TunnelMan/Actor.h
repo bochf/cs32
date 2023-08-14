@@ -13,7 +13,8 @@ class Actor : public GraphObject {
         unsigned int depth = 0);
   virtual ~Actor();
 
-  virtual void doSomething() = 0;
+  virtual void doSomething() = 0;  // to be implemented in the sub classes
+  virtual void annoyed(int deduction){};  // do nothing by default
 };
 
 class TunnelMan : public Actor {
@@ -21,6 +22,15 @@ class TunnelMan : public Actor {
   TunnelMan();
 
   void doSomething() final;
+  void annoyed(int deduction) final;
+
+ private:
+  int m_hitPoints = 10;
+  int m_waterUnits = 5;
+  int m_sonarCharges = 1;
+  int m_goldNuggets = 0;
+
+  bool alive() const;
 };
 
 class Earth : public Actor {
