@@ -54,27 +54,6 @@
     <ClInclude Include="RegularProtester.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="HardcoreProtester.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WaterSpurt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Boulder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Barrel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Sonar.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WaterPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Gold.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp">
@@ -91,33 +70,6 @@
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Protester.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RegularProtester.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HardcoreProtester.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WaterSpurt.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Boulder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Barrel.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Sonar.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WaterPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Gold.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

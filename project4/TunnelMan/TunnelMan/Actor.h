@@ -30,4 +30,46 @@ class Earth : public Actor {
   void doSomething() final{};
 };
 
+class Boulder : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class Squirt : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class Barrel : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class Gold : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class Sonar : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class WaterPool : public Actor {
+ public:
+  void doSomething() final{};
+};
+
+class Protester : public Actor {};
+
+class RegularProtester : public Protester {
+ public:
+  void doSomething() final{};
+};
+
+class HardcoreProtester : public Protester {
+ public:
+  void doSomething() final{};
+};
+
 #endif  // ACTOR_H_
