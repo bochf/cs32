@@ -1,50 +1,107 @@
 #include "Actor.h"
+#include "GameConstants.h"
+#include "GameController.h"
+#include "StudentWorld.h"
+
+#include <memory>
+#include <vector>
+
+using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////
 // Actor
-Actor::Actor(int imageID,
-             int startX,
-             int startY,
+Actor::Actor(StudentWorld* world,
+             int imageID,
+             int x,
+             int y,
+             bool visible,
              Direction dir,
-             double size,
-             unsigned int depth)
-    : GraphObject(imageID, startX, startY, dir, size, depth) {}
+             unsigned int depth,
+             double size)
+    : GraphObject(imageID, x, y, dir, size, depth), m_world(world) {
+  setVisible(visible);
+}
 
-Actor::~Actor() {}
+Actor::~Actor() {
+  m_world = nullptr;
+}
+
+void Actor::getArea(vector<Position>& area) const {
+  int x = getX();
+  int y = getY();
+  const int size = roundAwayFromZero(getSize() * 4);
+  area.clear();
+  for (int i = 0; i < size; ++i) {
+    for (int j = 0; j < size; ++j) {
+      area.push_back({x + i, y + j});
+    }
+  }
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // TunnelMan
-
-/**
- * @brief Constructor of TunnelMan
- * 1. The TunnelMan must have an image ID of TID_PLAYER.
- * 2. The TunnelMan must always start at location x=30, y=60.
- * 3. The TunnelMan, in its default state:
- *  a. Is given 10 hit points
- *  b. Is given 5 units of water to squirt with his squirt gun (he may pick up
- * additional Water in the oil field)
- *  c. Is given 1 sonar charge
- *  d. Starts out with zero gold nuggets
- *  e. Should start facing rightward
- * 4. The TunnelMan has the following graphic parameters:
- *  a. It has an image depth of 0 ¨C meaning its graphic image should always be
- * in the foreground (above other images) b. It has a size of 1.0
- */
-TunnelMan::TunnelMan() : Actor(TID_PLAYER, 30, 60) {
-  setVisible(true);
-}
-
 void TunnelMan::doSomething() {
   // check it is still alive
   if (!alive()) {
     return;
   }
 
-  // check it overlaps with an earth object
-  // TODO
+  // if overlap any earth object, dig it
+  if (dig()) {
+    Game().playSound(SOUND_DIG);
+    return;
+  }
 
   // check user input
-  // TODO
+  int key;
+  if (Game().getLastKey(key)) {
+    switch (key) {
+      case KEY_PRESS_ESCAPE:  // abort current level
+        m_hitPoints = 0;      // dead
+        break;
+      case KEY_PRESS_SPACE:  // fire a squirt
+        if (m_waterUnits <= 0) {
+          return;
+        }
+        switch (getDirection()) {
+          case Direction::left:
+            m_world->addActor(make_unique<Squirt>(m_world, getX() - 4, getY(),
+                                                  getDirection()));
+            break;
+          case right:
+            m_world->addActor(make_unique<Squirt>(m_world, getX() + 4, getY(),
+                                                  getDirection()));
+            break;
+          case up:
+            m_world->addActor(make_unique<Squirt>(m_world, getX(), getY() + 4,
+                                                  getDirection()));
+            break;
+          case down:
+            m_world->addActor(make_unique<Squirt>(m_world, getX(), getY() - 4,
+                                                  getDirection()));
+            break;
+          default:
+            break;
+        }
+        Game().playSound(SOUND_PLAYER_SQUIRT);
+        break;
+      case KEY_PRESS_LEFT:
+        break;
+      case KEY_PRESS_RIGHT:
+        break;
+      case KEY_PRESS_UP:
+        break;
+      case KEY_PRESS_DOWN:
+        break;
+      case 'Z':
+      case 'z':
+        break;
+      case KEY_PRESS_TAB:
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 void TunnelMan::annoyed(int deduction) {
@@ -60,27 +117,47 @@ void TunnelMan::annoyed(int deduction) {
   m_hitPoints -= deduction;
 }
 
-bool TunnelMan::alive() const {
-  return m_hitPoints > 0;
+bool TunnelMan::dig() const {
+  bool hasEarth = false;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (m_earthMap[getY() + i][getX() + j]) {
+        hasEarth = true;
+        m_earthMap[getY() + i][getX() + j] = nullptr;
+      }
+    }
+  }
+
+  return hasEarth;
 }
 
 //////////////////////////////////////////////////////////////////////////////
 // Earth
-/**
- * @brief Constructor of Earch
- * A Earth object must have an image ID of TID_EARTH.
- * Each Earth object must have its x,y location specified for it
- * Each Earth object must start out facing rightward.
- * Earth has the following graphic parameters:
- *  It has an image depth of 3 ¨C meaning its graphic image should always be in
- *  the background (all other game objects have smaller depth values)
- * It has a size of .25, meaning it occupies only a 1x1 square in the oil field.
- * Earth object must set itself to be visible
- *
- * @param startX
- * @param startY
- */
-Earth::Earth(int startX, int startY)
-    : Actor(TID_EARTH, startX, startY, GraphObject::right, 0.25, 3) {
-  setVisible(true);
+
+//////////////////////////////////////////////////////////////////////////////
+// Boulder
+void Boulder::doSomething() {
+  // check it is still alive
+  if (!alive()) {
+    return;
+  }
+
+  switch (m_state) {
+    case State::stable: {
+    } break;
+    case State::falling: {
+    } break;
+    case State::waiting: {
+      if (m_waitTicks < 30) {
+        ++m_waitTicks;
+      } else {
+        Game().playSound(SOUND_FALLING_ROCK);
+        m_state = State::falling;
+      }
+    } break;
+    case State::dead: {
+    } break;
+    default:
+      break;
+  }
 }

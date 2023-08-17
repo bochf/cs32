@@ -48,12 +48,6 @@
     <ClInclude Include="StudentWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Protester.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RegularProtester.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Actor.cpp">
