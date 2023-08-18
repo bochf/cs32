@@ -17,8 +17,7 @@ class Actor : public GraphObject {
  public:
   Actor(StudentWorld* world,
         int imageID,
-        int x,
-        int y,
+        const Position& p,
         bool visible = true,
         Direction dir = right,
         unsigned int depth = 2,
@@ -28,7 +27,7 @@ class Actor : public GraphObject {
   /**
    * @brief the action in each tick
    */
-  virtual void doSomething(){};
+  virtual void doSomething() = 0;
 
   /**
    * @brief actor is annoyed
@@ -49,11 +48,13 @@ class Actor : public GraphObject {
   virtual void occupies(std::vector<Position>& area) const;
 
  protected:
-  StudentWorld* m_world;  // pointer to the StudentWorld
+  StudentWorld* world() { return m_world; }
 
  private:
   Actor() = delete;
   Actor(const Actor&) = delete;
+
+  StudentWorld* m_world;  // pointer to the StudentWorld
 };
 
 /**
@@ -66,10 +67,46 @@ class Actor : public GraphObject {
  */
 class Earth : public Actor {
  public:
-  Earth(StudentWorld* world, int x, int y)
-      : Actor(world, TID_EARTH, x, y, true, GraphObject::right, 3, 0.25){};
+  Earth(StudentWorld* world, const Position& p)
+      : Actor(world, TID_EARTH, p, true, GraphObject::right, 3, 0.25){};
+
+  void doSomething() final{};
 };
 using FIELD = std::vector<std::vector<std::unique_ptr<Earth>>>;
+
+/**
+ * @brief class Gold
+ * 1. image ID: TID_GOLD
+ * 2. start off facing rightward
+ * 3. may star out visible or invisible
+ * 4. may pickup-able by either TunnelMan or Protesters
+ * 5. start out in a permanent state or a temp state
+ * 6. Gold Nuggets have the following graphic parameters:
+ *  They have an image depth of 2
+ *  They have a size of 1.0
+ */
+class Gold : public Actor {
+ public:
+  enum class Pickable {
+    player,    // pickable by a tunnel man
+    protester  // pickable by a protester
+  };
+
+  Gold(StudentWorld* world, const Position& p)
+      : Actor(world, TID_GOLD, p, false){};
+
+  void doSomething() final;
+
+ private:
+  Pickable m_pickable = Pickable::player;
+};
+
+class Sonar : public Actor {
+ public:
+  Sonar(StudentWorld* world, const Position& p) : Actor(world, TID_SONAR, p){};
+
+  void doSomething() final;
+};
 
 /**
  * 1. image ID: TID_PLAYER.
@@ -87,7 +124,8 @@ using FIELD = std::vector<std::vector<std::unique_ptr<Earth>>>;
  */
 class TunnelMan : public Actor {
  public:
-  explicit TunnelMan(StudentWorld* world) : Actor(world, TID_PLAYER, 30, 60){};
+  explicit TunnelMan(StudentWorld* world)
+      : Actor(world, TID_PLAYER, {30, 60}), m_golds(){};
 
   void doSomething() final;
   void annoyed(int points) final;
@@ -95,13 +133,14 @@ class TunnelMan : public Actor {
 
   int waterUnits() const { return m_waterUnits; }
   int sonarCharges() const { return m_sonarCharges; }
-  int golds() const { return m_goldNuggets; }
+  int golds() const { return m_golds.size(); }
 
  private:
   int m_hitPoints = 10;
   int m_waterUnits = 5;
   int m_sonarCharges = 1;
-  int m_goldNuggets = 0;
+
+  std::vector<std::unique_ptr<Gold>> m_golds;
 
   /**
    * @brief the TunnelMan fires a squirt when a space key is pressed
@@ -109,7 +148,7 @@ class TunnelMan : public Actor {
   void fire();
 
   /**
-   * @brief the TunnelMan moves toward or turn to the direction when an arrow
+   * @brief the TunnelMan moves forward or turn to the direction when an arrow
    * key is pressed
    * @param key
    */
@@ -166,21 +205,28 @@ class Boulder : public Actor {
               // field, or the earth, or another boulder
   };
 
-  Boulder(StudentWorld* world, int x, int y)
-      : Actor(world, TID_BOULDER, x, y, true, down, 1){};
+  Boulder(StudentWorld* world, const Position& p)
+      : Actor(world, TID_BOULDER, p, true, down, 1){};
   void doSomething() final;
   bool alive() const final { return m_state != State::dead; }
 
  private:
   State m_state = State::stable;
   int m_waitTicks = 0;
+
+  /**
+   * @brief check the Boulder object is above any Earth object
+   * @return true if there is any Earth in the 4 squares immediately below it.
+   */
+  bool onEarth() const;
 };
 
 class Squirt : public Actor {
  public:
-  Squirt(StudentWorld* world, int x, int y, const Direction dir)
-      : Actor(world, TID_WATER_SPURT, x, y, true, dir, 1){};
-  void doSomething() final{};
+  Squirt(StudentWorld* world, const Position& p, const Direction dir)
+      : Actor(world, TID_WATER_SPURT, p, true, dir, 1){};
+
+  void doSomething() final;
 
  private:
   int m_distance = 4;
@@ -188,57 +234,40 @@ class Squirt : public Actor {
 
 class Barrel : public Actor {
  public:
-  Barrel(StudentWorld* world, int x, int y)
-      : Actor(world, TID_BARREL, x, y, false){};
-  void doSomething() final{};
-};
+  Barrel(StudentWorld* world, const Position& p)
+      : Actor(world, TID_BARREL, p, false){};
 
-class Gold : public Actor {
- public:
-  enum class Pickable {
-    player,    // pickable by a tunnel man
-    protester  // pickable by a protester
-  };
-
-  Gold(StudentWorld* world, int x, int y)
-      : Actor(world, TID_GOLD, x, y, false){};
-  void doSomething() final{};
-
- private:
-  Pickable m_pickable = Pickable::player;
-};
-
-class Sonar : public Actor {
- public:
-  Sonar(StudentWorld* world, int x, int y) : Actor(world, TID_SONAR, x, y){};
-  void doSomething() final{};
+  void doSomething() final;
 };
 
 class WaterPool : public Actor {
  public:
-  WaterPool(StudentWorld* world, int x, int y)
-      : Actor(world, TID_WATER_POOL, x, y){};
-  void doSomething() final{};
+  WaterPool(StudentWorld* world, const Position& p)
+      : Actor(world, TID_WATER_POOL, p){};
+
+  void doSomething() final;
 };
 
 class Protester : public Actor {
  public:
-  Protester(StudentWorld* world, int tid, int x, int y)
-      : Actor(world, tid, x, y, true, Direction::left){};
+  Protester(StudentWorld* world, int tid, const Position& p)
+      : Actor(world, tid, p, true, Direction::left){};
 };
 
 class RegularProtester : public Protester {
  public:
-  RegularProtester(StudentWorld* world, int x, int y)
-      : Protester(world, TID_PROTESTER, x, y){};
-  void doSomething() final{};
+  RegularProtester(StudentWorld* world, const Position& p)
+      : Protester(world, TID_PROTESTER, p){};
+
+  void doSomething() final;
 };
 
 class HardcoreProtester : public Protester {
  public:
-  HardcoreProtester(StudentWorld* world, int x, int y)
-      : Protester(world, TID_HARD_CORE_PROTESTER, x, y){};
-  void doSomething() final{};
+  HardcoreProtester(StudentWorld* world, const Position& p)
+      : Protester(world, TID_HARD_CORE_PROTESTER, p){};
+
+  void doSomething() final;
 };
 
 #endif  // ACTOR_H_

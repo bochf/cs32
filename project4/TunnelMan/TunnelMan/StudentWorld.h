@@ -24,8 +24,6 @@ class StudentWorld : public GameWorld {
   ///
   /// new methods not inherited from GameWorld
   ///
-  FIELD& getField() { return m_earthMap; }
-
   void addActor(std::unique_ptr<Actor> actor) {
     m_actors.push_back(std::move(actor));
   }
@@ -41,21 +39,29 @@ class StudentWorld : public GameWorld {
   bool walkable(int x, int y) const;
 
   /**
+   * @brief search all the hidden objects (e.g. oil barrels and gold nuggets)
+   * within the radius of a given position and make them visible.
+   * @param p the position
+   * @param radius the radius
+   * @return number of barrels found
+   */
+  int discover(const Position& p, int radius);
+
+  /**
    * @brief remove a squre of earth objects from the field
    * @param x, left
    * @param y, bottom
    * @param size, length of the squire
    * @return number of earth objects been removed
    */
-  int removeEarth(int x, int y, int size);
+  int checkEarth(const Position& bottomLeft,
+                 const Position& topRight,
+                 bool clean = true);
 
  private:
   std::unique_ptr<TunnelMan> m_player;
   std::vector<std::unique_ptr<Actor>> m_actors;
   FIELD m_earthMap;
-  int m_numBoulders = 0;
-  int m_numGolds = 0;
-  int m_numBarrels = 0;
   int m_numProtesters = 0;
 
   /**

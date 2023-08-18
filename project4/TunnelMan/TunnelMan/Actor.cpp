@@ -32,13 +32,12 @@ GraphObject::Direction keyToDirection(int key) {
 // Actor
 Actor::Actor(StudentWorld* world,
              int imageID,
-             int x,
-             int y,
+             const Position& p,
              bool visible,
              Direction dir,
              unsigned int depth,
              double size)
-    : GraphObject(imageID, x, y, dir, size, depth), m_world(world) {
+    : GraphObject(imageID, p.x, p.y, dir, size, depth), m_world(world) {
   setVisible(visible);
 }
 
@@ -67,14 +66,16 @@ void TunnelMan::doSomething() {
   }
 
   // if overlap any earth object, dig it
-  if (m_world->removeEarth(getX(), getY(), 4)) {
+  const Position bottomLeft{getX(), getY()};
+  const Position topRight{getX() + 4, getY() + 4};
+  if (world()->checkEarth(bottomLeft, topRight, true)) {
     Game().playSound(SOUND_DIG);
     return;
   }
 
   // check user input
   int key;
-  if (m_world->getKey(key)) {
+  if (world()->getKey(key)) {
     switch (key) {
       case KEY_PRESS_ESCAPE:  // abort current level
         quit();
@@ -119,8 +120,8 @@ void TunnelMan::fire() {
     return;
   }
 
-  auto p = newPosition(getDirection(), 4);
-  m_world->addActor(make_unique<Squirt>(m_world, p.x, p.y, getDirection()));
+  const auto p = newPosition(getDirection(), 4);
+  world()->addActor(make_unique<Squirt>(world(), p, getDirection()));
   Game().playSound(SOUND_PLAYER_SQUIRT);
 }
 
@@ -128,7 +129,7 @@ void TunnelMan::move(int key) {
   const auto dir = keyToDirection(key);
   if (getDirection() == dir) {  // same direction, move forward
     const auto p = newPosition(dir, 1);
-    if (m_world->walkable(p.x, p.y)) {
+    if (world()->walkable(p.x, p.y)) {
       moveTo(p.x, p.y);
     }
   } else {
@@ -143,13 +144,15 @@ void TunnelMan::quit() {
 
 void TunnelMan::scanOil() {
   if (m_sonarCharges > 0) {
+    // search Barrel objects
+    world()->discover({getX(), getY()}, 12);
     --m_sonarCharges;
   }
 }
 
 void TunnelMan::dropGold() {
-  if (m_goldNuggets) {
-    --m_goldNuggets;
+  if (!m_golds.empty()) {
+    m_golds.pop_back();
   }
 }
 
@@ -174,8 +177,6 @@ Position TunnelMan::newPosition(const Direction& dir, int dist) const {
   }
   return {x, y};
 }
-//////////////////////////////////////////////////////////////////////////////
-// Earth
 
 //////////////////////////////////////////////////////////////////////////////
 // Boulder
@@ -203,4 +204,52 @@ void Boulder::doSomething() {
     default:
       break;
   }
+}
+
+bool Boulder::onEarth() const {
+  for (int x = getX(); x < getX() + 4; ++x) {
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Squirt
+void Squirt::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Barrel
+void Barrel::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Gold
+void Gold::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Sonar
+void Sonar::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// WaterPool
+void WaterPool::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// RegularProtester
+void RegularProtester::doSomething() {
+  // TODO
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// HardcoreProtester
+void HardcoreProtester::doSomething() {
+  // TODO
 }
