@@ -8,6 +8,26 @@
 
 using namespace std;
 
+/**
+ * @brief translate the user pressed key to the direction
+ * @param key the input key, e.g. left, right, up, down
+ * @return the corresponding direction
+ */
+GraphObject::Direction keyToDirection(int key) {
+  switch (key) {
+    case KEY_PRESS_LEFT:
+      return GraphObject::Direction::left;
+    case KEY_PRESS_RIGHT:
+      return GraphObject::Direction::right;
+    case KEY_PRESS_UP:
+      return GraphObject::Direction::up;
+    case KEY_PRESS_DOWN:
+      return GraphObject::Direction::down;
+    default:
+      return GraphObject::Direction::none;
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Actor
 Actor::Actor(StudentWorld* world,
@@ -26,7 +46,7 @@ Actor::~Actor() {
   m_world = nullptr;
 }
 
-void Actor::getArea(vector<Position>& area) const {
+void Actor::occupies(vector<Position>& area) const {
   int x = getX();
   int y = getY();
   const int size = roundAwayFromZero(getSize() * 4);
@@ -47,56 +67,33 @@ void TunnelMan::doSomething() {
   }
 
   // if overlap any earth object, dig it
-  if (dig()) {
+  if (m_world->removeEarth(getX(), getY(), 4)) {
     Game().playSound(SOUND_DIG);
     return;
   }
 
   // check user input
   int key;
-  if (Game().getLastKey(key)) {
+  if (m_world->getKey(key)) {
     switch (key) {
       case KEY_PRESS_ESCAPE:  // abort current level
-        m_hitPoints = 0;      // dead
+        quit();
         break;
       case KEY_PRESS_SPACE:  // fire a squirt
-        if (m_waterUnits <= 0) {
-          return;
-        }
-        switch (getDirection()) {
-          case Direction::left:
-            m_world->addActor(make_unique<Squirt>(m_world, getX() - 4, getY(),
-                                                  getDirection()));
-            break;
-          case right:
-            m_world->addActor(make_unique<Squirt>(m_world, getX() + 4, getY(),
-                                                  getDirection()));
-            break;
-          case up:
-            m_world->addActor(make_unique<Squirt>(m_world, getX(), getY() + 4,
-                                                  getDirection()));
-            break;
-          case down:
-            m_world->addActor(make_unique<Squirt>(m_world, getX(), getY() - 4,
-                                                  getDirection()));
-            break;
-          default:
-            break;
-        }
-        Game().playSound(SOUND_PLAYER_SQUIRT);
+        fire();
         break;
       case KEY_PRESS_LEFT:
-        break;
       case KEY_PRESS_RIGHT:
-        break;
       case KEY_PRESS_UP:
-        break;
       case KEY_PRESS_DOWN:
+        move(key);
         break;
       case 'Z':
       case 'z':
+        scanOil();
         break;
       case KEY_PRESS_TAB:
+        dropGold();
         break;
       default:
         break;
@@ -117,20 +114,66 @@ void TunnelMan::annoyed(int deduction) {
   m_hitPoints -= deduction;
 }
 
-bool TunnelMan::dig() const {
-  bool hasEarth = false;
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      if (m_earthMap[getY() + i][getX() + j]) {
-        hasEarth = true;
-        m_earthMap[getY() + i][getX() + j] = nullptr;
-      }
-    }
+void TunnelMan::fire() {
+  if (m_waterUnits <= 0) {
+    return;
   }
 
-  return hasEarth;
+  auto p = newPosition(getDirection(), 4);
+  m_world->addActor(make_unique<Squirt>(m_world, p.x, p.y, getDirection()));
+  Game().playSound(SOUND_PLAYER_SQUIRT);
 }
 
+void TunnelMan::move(int key) {
+  const auto dir = keyToDirection(key);
+  if (getDirection() == dir) {  // same direction, move forward
+    const auto p = newPosition(dir, 1);
+    if (m_world->walkable(p.x, p.y)) {
+      moveTo(p.x, p.y);
+    }
+  } else {
+    // different direction, turn
+    setDirection(dir);
+  }
+}
+
+void TunnelMan::quit() {
+  m_hitPoints = 0;  // dead
+}
+
+void TunnelMan::scanOil() {
+  if (m_sonarCharges > 0) {
+    --m_sonarCharges;
+  }
+}
+
+void TunnelMan::dropGold() {
+  if (m_goldNuggets) {
+    --m_goldNuggets;
+  }
+}
+
+Position TunnelMan::newPosition(const Direction& dir, int dist) const {
+  int x = getX();
+  int y = getY();
+  switch (dir) {
+    case Direction::left:
+      x = getX() - dist;
+      break;
+    case right:
+      x = getX() + dist;
+      break;
+    case up:
+      y = getY() + dist;
+      break;
+    case down:
+      y = getY() - dist;
+      break;
+    default:
+      break;
+  }
+  return {x, y};
+}
 //////////////////////////////////////////////////////////////////////////////
 // Earth
 
@@ -143,20 +186,20 @@ void Boulder::doSomething() {
   }
 
   switch (m_state) {
-    case State::stable: {
-    } break;
-    case State::falling: {
-    } break;
-    case State::waiting: {
+    case State::stable:
+      break;
+    case State::falling:
+      break;
+    case State::waiting:
       if (m_waitTicks < 30) {
         ++m_waitTicks;
       } else {
         Game().playSound(SOUND_FALLING_ROCK);
         m_state = State::falling;
       }
-    } break;
-    case State::dead: {
-    } break;
+      break;
+    case State::dead:
+      break;
     default:
       break;
   }

@@ -46,7 +46,7 @@ class Actor : public GraphObject {
    * @brief get the list of positions covered by the actor
    * @param area, an array to store all the positions covered by this actor
    */
-  virtual void getArea(std::vector<Position>& area) const;
+  virtual void occupies(std::vector<Position>& area) const;
 
  protected:
   StudentWorld* m_world;  // pointer to the StudentWorld
@@ -87,26 +87,56 @@ using FIELD = std::vector<std::vector<std::unique_ptr<Earth>>>;
  */
 class TunnelMan : public Actor {
  public:
-  explicit TunnelMan(StudentWorld* world, FIELD& earthMap)
-      : Actor(world, TID_PLAYER, 30, 60), m_earthMap(earthMap){};
+  explicit TunnelMan(StudentWorld* world) : Actor(world, TID_PLAYER, 30, 60){};
 
   void doSomething() final;
   void annoyed(int points) final;
   bool alive() const final { return m_hitPoints > 0; };
+
+  int waterUnits() const { return m_waterUnits; }
+  int sonarCharges() const { return m_sonarCharges; }
+  int golds() const { return m_goldNuggets; }
 
  private:
   int m_hitPoints = 10;
   int m_waterUnits = 5;
   int m_sonarCharges = 1;
   int m_goldNuggets = 0;
-  FIELD& m_earthMap;  // reference to the earth map in the game world
 
   /**
-   * @brief dig the earth under the player
-   * remove/destroy the Earth objects fromt he 4*4 area occupied by the
-   * TunnelMan play a SOUND_DIG
+   * @brief the TunnelMan fires a squirt when a space key is pressed
    */
-  bool dig() const;
+  void fire();
+
+  /**
+   * @brief the TunnelMan moves toward or turn to the direction when an arrow
+   * key is pressed
+   * @param key
+   */
+  void move(int key);
+
+  /**
+   * @brief abort the current level when ESC key is pressed
+   */
+  void quit();
+
+  /**
+   * @brief the TunnelMan illuminates oil barrels when Z or z is pressed
+   */
+  void scanOil();
+
+  /**
+   * @brief the TunnelMan drop a gold nugget when TAB key is pressed
+   */
+  void dropGold();
+
+  /**
+   * @brief get the new position based on the direction and distance
+   * @param dir the direction
+   * @param dist the distance from the TunnelMan
+   * @return the new corrdinates
+   */
+  Position newPosition(const Direction& dir, int dist) const;
 };
 
 /**
@@ -165,12 +195,17 @@ class Barrel : public Actor {
 
 class Gold : public Actor {
  public:
-  Gold(StudentWorld* world, int x, int y, bool visiable, int pickable)
-      : Actor(world, TID_GOLD, x, y, visiable){};
+  enum class Pickable {
+    player,    // pickable by a tunnel man
+    protester  // pickable by a protester
+  };
+
+  Gold(StudentWorld* world, int x, int y)
+      : Actor(world, TID_GOLD, x, y, false){};
   void doSomething() final{};
 
  private:
-  int m_pickable = 0;
+  Pickable m_pickable = Pickable::player;
 };
 
 class Sonar : public Actor {

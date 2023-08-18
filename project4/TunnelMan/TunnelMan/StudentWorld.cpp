@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#define SQUARE(x) (x) * (x)
+
 GameWorld* createStudentWorld(string assetDir) {
   return new StudentWorld(assetDir);
 }
@@ -20,42 +22,17 @@ int StudentWorld::init() {
   m_numBoulders = min(getLevel() / 2 + 2, 9U);
   m_numGolds = max(5 - getLevel() / 2, 2U);
 
-  m_player = std::make_unique<TunnelMan>(this, m_earthMap);
+  m_player = std::make_unique<TunnelMan>(this);
   createEarth();
 
-  // devide the earth into multiple 4*4 blocks to put the boulders, golds,
-  // barrels
-  vector<Position> blocks;
-  for (int row = 0; row < VIEW_HEIGHT - 4; row = row + 4) {
-    int col = 1;
-    while (col < 26) {
-      blocks.push_back({col, row});
-      col += 4;
-    }
-    col = 35;
-    while (col < VIEW_WIDTH - 4) {
-      blocks.push_back({col, row});
-      col += 4;
-    }
-  }
-  random_device rd;
-  mt19937 g(rd());
-  std::shuffle(blocks.begin(), blocks.end(), g);
-
   // add boulders
-  for (int i = 0; i < m_numBoulders; ++i) {
-    const auto& position = blocks.back();
-    m_actors.emplace_back(make_unique<Boulder>(this, position.x, position.y));
-    blocks.pop_back();
-  }
+  createBoulders();
 
-  // add golds
-  for (int i = 0; i < m_numGolds; ++i) {
-    const auto& position = blocks.back();
-    m_actors.emplace_back(
-        make_unique<Gold>(this, position.x, position.y, false, 0));
-    blocks.pop_back();
-  }
+  // add gold nuggets
+  createGolds();
+
+  // add oil barrels
+  createBarrels();
 
   return GWSTATUS_CONTINUE_GAME;
 }
@@ -105,6 +82,25 @@ void StudentWorld::cleanUp() {
   m_earthMap.clear();
 }
 
+Position StudentWorld::generatePosition(int left,
+                                        int right,
+                                        int bottom,
+                                        int top,
+                                        int radius) const {
+  Position p;
+  do {
+    p.x = rand() % (right - left + 1) + left;  // random number in [left, right]
+    p.y =
+        rand() % (top - bottom + 1) + bottom;  // random number in [bottom, top]
+  } while (any_of(m_actors.begin(), m_actors.end(),
+                  [&, p, radius](const unique_ptr<Actor>& actor) {
+                    return (SQUARE(p.x - actor->getX()) +
+                            SQUARE(p.y - actor->getY())) < SQUARE(radius);
+                  }));
+
+  return p;
+}
+
 /**
  * @brief create the Earth objects of the oil field from (0, 0) to (59, 63)
  * the Earth objects will cover the entire field except a mine shaft in the
@@ -124,17 +120,64 @@ void StudentWorld::createEarth() {
 }
 
 void StudentWorld::createBoulders() {
-  int num = min(getLevel() / 2 + 2, 9U);
-  for (int i = 0; i < num; ++i) {
-    int x = rand() % (VIEW_HEIGHT - 4);
-    int y = rand() % (VIEW_HEIGHT - 4);
-    m_actors.emplace_back(make_unique<Boulder>(this, x, y));
+  int numBoulders = min(getLevel() / 2 + 2, 9U);
+  // Boulders must be distributed between x=0,y=20 and x=60,y=56, inclusive (so
+  // they have room to fall)
+  for (int i = 0; i < numBoulders; ++i) {
+    auto p = generatePosition(0, 60, 20, 56, 6);
+    // There must not be any Earth overlapping the 4x4 square region of each
+    // Boulder, so we need to clear this Earth out when you place your Boulders
+    // within the oil field
+    removeEarth(p.x, p.y, 4);
+    m_actors.emplace_back(make_unique<Boulder>(this, p.x, p.y));
   }
 }
 
 void StudentWorld::createGolds() {
-  int num = min(5 - getLevel() / 2, 2U);
-  for (int i = 0; i < num; ++i) {
+  int numGolds = max(5 - getLevel() / 2, 2U);
+  // Nuggets and Oil Barrels must be distributed between x=0,y=0 and x=60,y=56
+  // inclusive
+  for (int i = 0; i < numGolds; ++i) {
+    auto p = generatePosition(0, 60, 0, 56, 6);
+    m_actors.emplace_back(make_unique<Gold>(this, p.x, p.y));
+  }
+}
+
+int StudentWorld::removeEarth(int x, int y, int size) {
+  int earthRemoved = 0;
+  for (int i = x; i < x + size; ++i) {
+    for (int j = y; j < y + size; ++j) {
+      if (m_earthMap[j][i]) {
+        ++earthRemoved;
+        m_earthMap[j][i] = nullptr;
+      }
+    }
+  }
+  return earthRemoved;
+}
+
+bool StudentWorld::walkable(int x, int y) const {
+  if (x < 0 || x > 60 || y < 0 || y > 60)
+    return false;
+
+  return none_of(m_actors.begin(), m_actors.end(),
+                 [&, x, y](const unique_ptr<Actor>& actor) {
+                   return (actor->getID() == TID_BOULDER) &&
+                          (actor->getX() + 4 > x && actor->getX() < x + 4 &&
+                           actor->getY() + 4 > y && actor->getY() < y + 4);
+                   // although the spec says the TunnelMan can't occupy a square
+                   // that is less than or equal to a radius of 3 away from the
+                   // center of any Boulder, the behavior of the example program
+                   // seems that the TunnelMan can go anywhere in the field as
+                   // long as there is no overlap on the 4*4 square of a Boulder
+                 });
+}
+
+void StudentWorld::createBarrels() {
+  int numBarrels = min(2 + getLevel(), 21U);
+  for (int i = 0; i < numBarrels; ++i) {
+    auto p = generatePosition(0, 60, 0, 56, 6);
+    m_actors.emplace_back(make_unique<Barrel>(this, p.x, p.y));
   }
 }
 
@@ -164,15 +207,14 @@ void StudentWorld::updateDisplayText() {
   ///  there must be exactly two spaces.
 
   int health = 100;
-  int water = 0;
-  int gold = 0;
-  int sonar = 0;
+
   int oil = 3;
   ostringstream oss;
   oss << "Scr: " << setw(6) << setfill('0') << getScore()
       << "  Lvl: " << setw(2) << setfill(' ') << getLevel()
       << "  Lives: " << setw(1) << getLives() << "  Hlth: " << setw(3) << health
-      << "%  Wtr: " << setw(2) << water << "  Gld: " << setw(2) << gold
-      << "  Sonar: " << setw(2) << sonar << "  Oil Left: " << setw(2) << oil;
+      << "%  Wtr: " << setw(2) << m_player->waterUnits() << "  Gld: " << setw(2)
+      << m_player->golds() << "  Sonar: " << setw(2) << m_player->sonarCharges()
+      << "  Oil Left: " << setw(2) << oil;
   setGameStatText(oss.str());
 }
