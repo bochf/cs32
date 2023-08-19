@@ -67,8 +67,8 @@ bool Actor::overlap(const Position& bottomLeft,
 
 bool Actor::overlap(const GraphObject& other) const {
   const Position bottomLeft{other.getX(), other.getY()};
-  const Position topRight{other.getX() + other.getSize() * 4,
-                          other.getY() + other.getSize() * 4};
+  const Position topRight{other.getX() + static_cast<int>(other.getSize() * 4),
+                          other.getY() + static_cast<int>(other.getSize() * 4)};
   return overlap(bottomLeft, topRight);
 }
 
@@ -209,10 +209,11 @@ void Boulder::doSomething() {
       }
       break;
     case State::falling:
-      if (onEarth() || !world()->walkable(getX(), getY() - 1)) {
+      if (onEarth() || !world()->walkable(getX(), getY() - 5)) {
         m_state = State::dead;
+      } else {
+        moveTo(getX(), getY() - 1);
       }
-      moveTo(getX(), getY() - 1);
       break;
     case State::waiting:
       if (m_waitTicks < 30) {

@@ -237,3 +237,14 @@ void StudentWorld::updateDisplayText() {
       << "  Oil Left: " << setw(2) << oil;
   setGameStatText(oss.str());
 }
+
+bool StudentWorld::levelCompleted() const {
+  // TODO
+  return false;
+}
+
+void StudentWorld::removeDeadGameObjects() {
+  m_actors.erase(remove_if(m_actors.begin(), m_actors.end(),
+                           [](const auto& actor) { return (!actor->alive()); }),
+                 m_actors.end());
+}

@@ -91,8 +91,15 @@ class StudentWorld : public GameWorld {
    */
   void updateDisplayText();
 
-  bool levelCompleted() { return false; }
-  void removeDeadGameObjects(){};
+  /**
+   * @brief check the current level completed;
+   */
+  bool levelCompleted() const;
+
+  /**
+   * @brief remove all the dead objects
+   */
+  void removeDeadGameObjects();
 };
 
 #endif  // STUDENTWORLD_H_
