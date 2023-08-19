@@ -48,10 +48,13 @@ class StudentWorld : public GameWorld {
   int discover(const Position& p, int radius);
 
   /**
-   * @brief remove a squre of earth objects from the field
-   * @param x, left
-   * @param y, bottom
-   * @param size, length of the squire
+   * @brief count how many earth object in the specified area, remove them if
+   * the clean flag is true
+   * @param bottomLeft, the coordinates of the bottom left corner of the square,
+   * inclusive
+   * @param topRight, the coordinates of the top right corner of the square,
+   * exclusive
+   * @param clean, delete the earth object if the flag is true
    * @return number of earth objects been removed
    */
   int checkEarth(const Position& bottomLeft,

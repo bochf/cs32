@@ -191,8 +191,7 @@ bool StudentWorld::walkable(int x, int y) const {
   return none_of(m_actors.begin(), m_actors.end(),
                  [&, x, y](const unique_ptr<Actor>& actor) {
                    return (actor->getID() == TID_BOULDER) &&
-                          (actor->getX() + 4 > x && actor->getX() < x + 4 &&
-                           actor->getY() + 4 > y && actor->getY() < y + 4);
+                          actor->overlap({x, y}, {x + 4, y + 4});
                    // although the spec says the TunnelMan can't occupy a square
                    // that is less than or equal to a radius of 3 away from the
                    // center of any Boulder, the behavior of the example program

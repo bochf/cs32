@@ -45,7 +45,22 @@ class Actor : public GraphObject {
    * @brief get the list of positions covered by the actor
    * @param area, an array to store all the positions covered by this actor
    */
-  virtual void occupies(std::vector<Position>& area) const;
+  // virtual void occupies(std::vector<Position>& area) const;
+
+  /**
+   * @brief check the GraphObject overlaps with a specified rectangle
+   * @param bottomLeft coordinates of the bottom left corner of the rectangle
+   * @param topRight coordinates of the top right corner of the rectangle
+   * @return true if there is overlap
+   */
+  bool overlap(const Position& bottomLeft, const Position& topRight) const;
+
+  /**
+   * @brief check the GraphObject overlaps with another object
+   * @param other another object
+   * @return true if there is overlap
+   */
+  bool overlap(const GraphObject& other) const;
 
  protected:
   StudentWorld* world() { return m_world; }
@@ -218,7 +233,7 @@ class Boulder : public Actor {
    * @brief check the Boulder object is above any Earth object
    * @return true if there is any Earth in the 4 squares immediately below it.
    */
-  bool onEarth() const;
+  bool onEarth();
 };
 
 class Squirt : public Actor {

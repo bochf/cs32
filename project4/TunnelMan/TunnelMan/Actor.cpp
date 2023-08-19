@@ -45,6 +45,7 @@ Actor::~Actor() {
   m_world = nullptr;
 }
 
+/*
 void Actor::occupies(vector<Position>& area) const {
   int x = getX();
   int y = getY();
@@ -55,6 +56,20 @@ void Actor::occupies(vector<Position>& area) const {
       area.push_back({x + i, y + j});
     }
   }
+}
+*/
+
+bool Actor::overlap(const Position& bottomLeft,
+                    const Position& topRight) const {
+  return (bottomLeft.x < getX() + getSize() * 4 && getX() < topRight.x &&
+          bottomLeft.y < getY() + getSize() * 4 && getY() < topRight.y);
+}
+
+bool Actor::overlap(const GraphObject& other) const {
+  const Position bottomLeft{other.getX(), other.getY()};
+  const Position topRight{other.getX() + other.getSize() * 4,
+                          other.getY() + other.getSize() * 4};
+  return overlap(bottomLeft, topRight);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -188,8 +203,16 @@ void Boulder::doSomething() {
 
   switch (m_state) {
     case State::stable:
+      // check there is any earth object under the boulder
+      if (!onEarth()) {
+        m_state = State::waiting;
+      }
       break;
     case State::falling:
+      if (onEarth() || !world()->walkable(getX(), getY() - 1)) {
+        m_state = State::dead;
+      }
+      moveTo(getX(), getY() - 1);
       break;
     case State::waiting:
       if (m_waitTicks < 30) {
@@ -206,10 +229,10 @@ void Boulder::doSomething() {
   }
 }
 
-bool Boulder::onEarth() const {
-  for (int x = getX(); x < getX() + 4; ++x) {
-  }
-  return false;
+bool Boulder::onEarth() {
+  const Position bottomLeft{getX(), getY() - 1};
+  const Position topRight{getX() + 4, getY()};
+  return world()->checkEarth(bottomLeft, topRight, false) > 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////
