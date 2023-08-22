@@ -6,11 +6,29 @@
 #include <memory>
 #include <vector>
 
+#define SQUARE(x) (x) * (x)
+
 class StudentWorld;
 
 struct Position {
   int x;
   int y;
+
+  Position(int xx, int yy) : x(xx), y(yy) {}
+
+  // return true if both x and y less than the other
+  bool operator<(const Position& other) const {
+    return (x < other.x && y < other.y);
+  }
+
+  bool operator==(const Position& other) const {
+    return (x == other.x && y == other.y);
+  }
+
+  // a position that vertically and horizontally size away
+  Position operator+(double size) const {
+    return Position{static_cast<int>(x + size), static_cast<int>(y + size)};
+  }
 };
 
 class Actor : public GraphObject {
@@ -42,34 +60,85 @@ class Actor : public GraphObject {
   virtual bool alive() const { return true; }
 
   /**
-   * @brief get the list of positions covered by the actor
-   * @param area, an array to store all the positions covered by this actor
+   * @brief an actor pickup a gold
    */
-  // virtual void occupies(std::vector<Position>& area) const;
+  virtual void pickGold() {}
+
+  Position bottomLeft() const { return Position(getX(), getY()); }
+  Position topRight() const { return bottomLeft() + getSize() * 4; }
+
+  // the radius of the circumscribed cirel
+  double radius() const { return m_radius; }
 
   /**
    * @brief check the GraphObject overlaps with a specified rectangle
-   * @param bottomLeft coordinates of the bottom left corner of the rectangle
-   * @param topRight coordinates of the top right corner of the rectangle
+   * @param bl coordinates of the bottom left corner of the rectangle
+   * @param tr coordinates of the top right corner of the rectangle
    * @return true if there is overlap
    */
-  bool overlap(const Position& bottomLeft, const Position& topRight) const;
+  bool overlap(const Position& bl, const Position& tr) const {
+    return (bl < topRight() && bottomLeft() < tr);
+  }
 
   /**
    * @brief check the GraphObject overlaps with another object
    * @param other another object
    * @return true if there is overlap
    */
-  bool overlap(const GraphObject& other) const;
+  bool overlap(const Actor& other) const {
+    return overlap(other.bottomLeft(), other.topRight());
+  }
+
+  /**
+   * @brief the distance between a position and the bottom left corner of the
+   * object
+   * @param pos the target position
+   * @return the length
+   */
+  double distance(const Position& pos) const;
+
+  /**
+   * @brief the distance between 2 objects' bottom left corners
+   * @param other the other object
+   * @return the length
+   */
+  double distance(const Actor& other) const;
+
+  /**
+   * @brief check a position in the circle originating at the center of the
+   * object with radius r
+   * @param pos the coordinates of the position
+   * @param r the radius
+   * @return true if the point in side the circle
+   */
+  bool inCircle(const Position& pos, double r) const;
+
+  /**
+   * @brief check any of a unit square of an object falls into the circle
+   * originating at the center of the object with radius r
+   * @param other the object
+   * @param r the radius
+   * @return true if the other object's area overlaps with the circle
+   */
+  bool inCircle(const Actor& other, double r) const;
 
  protected:
   StudentWorld* world() { return m_world; }
+
+  /**
+   * @brief get the new position based on the current position, direction and
+   * distance
+   * @param dist the distance from the TunnelMan
+   * @return the new corrdinates
+   */
+  Position directionalPosition(int dist) const;
 
  private:
   Actor() = delete;
   Actor(const Actor&) = delete;
 
   StudentWorld* m_world;  // pointer to the StudentWorld
+  double m_radius;        // the radius of the circumscribed cirel
 };
 
 /**
@@ -87,7 +156,6 @@ class Earth : public Actor {
 
   void doSomething() final{};
 };
-using FIELD = std::vector<std::vector<std::unique_ptr<Earth>>>;
 
 /**
  * @brief class Gold
@@ -107,18 +175,26 @@ class Gold : public Actor {
     protester  // pickable by a protester
   };
 
-  Gold(StudentWorld* world, const Position& p)
-      : Actor(world, TID_GOLD, p, false){};
+  Gold(StudentWorld* world,
+       const Position& p,
+       const Pickable& pickable = Pickable::player,
+       int ttl = -1  // -1 means perment state
+       )
+      : Actor(world, TID_GOLD, p, false), m_pickable(pickable), m_ttl(ttl){};
+
+  bool alive() const final { return m_ttl == 0; }
 
   void doSomething() final;
 
  private:
-  Pickable m_pickable = Pickable::player;
+  Pickable m_pickable;
+  int m_ttl;  // time to live
 };
 
 class Sonar : public Actor {
  public:
-  Sonar(StudentWorld* world, const Position& p) : Actor(world, TID_SONAR, p){};
+  explicit Sonar(StudentWorld* world)
+      : Actor(world, TID_SONAR, Position{0, 60}){};
 
   void doSomething() final;
 };
@@ -148,14 +224,20 @@ class TunnelMan : public Actor {
 
   int waterUnits() const { return m_waterUnits; }
   int sonarCharges() const { return m_sonarCharges; }
-  int golds() const { return m_golds.size(); }
+  int golds() const { return m_golds; }
+
+  void pickGold() final { m_golds++; }
+
+  /**
+   * @brief the TunnelMan drop a gold nugget when TAB key is pressed
+   */
+  void dropGold();
 
  private:
   int m_hitPoints = 10;
   int m_waterUnits = 5;
   int m_sonarCharges = 1;
-
-  std::vector<std::unique_ptr<Gold>> m_golds;
+  int m_golds = 0;
 
   /**
    * @brief the TunnelMan fires a squirt when a space key is pressed
@@ -175,22 +257,10 @@ class TunnelMan : public Actor {
   void quit();
 
   /**
-   * @brief the TunnelMan illuminates oil barrels when Z or z is pressed
+   * @brief the TunnelMan illuminates oil barrels and gold nuggets when Z or z
+   * is pressed
    */
-  void scanOil();
-
-  /**
-   * @brief the TunnelMan drop a gold nugget when TAB key is pressed
-   */
-  void dropGold();
-
-  /**
-   * @brief get the new position based on the direction and distance
-   * @param dir the direction
-   * @param dist the distance from the TunnelMan
-   * @return the new corrdinates
-   */
-  Position newPosition(const Direction& dir, int dist) const;
+  void scanField();
 };
 
 /**
@@ -234,12 +304,31 @@ class Boulder : public Actor {
    * @return true if there is any Earth in the 4 squares immediately below it.
    */
   bool onEarth();
+
+  /**
+   * @brief check the Boulder object hits any other boulders
+   * @return true if overlap
+   */
+  bool hitBoulder();
 };
 
+/**
+ * @brief class Squirt
+ * 1. Image ID: TID_WATER_SPURT
+ * 2. A Squirt object's initial position depends on the TunnelMan's position and
+ * direction
+ * 3. A Squirt objects's direction is the same as the TunnelMan's direction
+ * 4. A Squirt object starts off with an initial distance 4 squares
+ * 5. Image depth: 1
+ * 6. Size: 1.0
+ * 7. Visible: true
+ */
 class Squirt : public Actor {
  public:
   Squirt(StudentWorld* world, const Position& p, const Direction dir)
       : Actor(world, TID_WATER_SPURT, p, true, dir, 1){};
+
+  bool alive() const final { return m_distance > 0; }
 
   void doSomething() final;
 
@@ -247,12 +336,26 @@ class Squirt : public Actor {
   int m_distance = 4;
 };
 
+/**
+ * @brief class Barrel
+ * 1. Image ID: TID_BARREL
+ * 2. A Barrel object's initial x, y location is set by the caller
+ * 3. A Barrel object starts off facing rightward
+ * 4. Image depth: 2
+ * 5. Size: 1.0
+ * 6. Visible: false
+ */
 class Barrel : public Actor {
  public:
   Barrel(StudentWorld* world, const Position& p)
       : Actor(world, TID_BARREL, p, false){};
 
+  bool alive() const final { return m_alive; }
+
   void doSomething() final;
+
+ private:
+  bool m_alive = true;
 };
 
 class WaterPool : public Actor {
@@ -265,22 +368,28 @@ class WaterPool : public Actor {
 
 class Protester : public Actor {
  public:
-  Protester(StudentWorld* world, int tid, const Position& p)
-      : Actor(world, tid, p, true, Direction::left){};
+  Protester(StudentWorld* world, int tid)
+      : Actor(world, tid, {60, 60}, true, Direction::left){};
+
+  bool alive() const final { return m_alive; }
+  void pickGold() final{};
+
+ private:
+  bool m_alive = true;
 };
 
 class RegularProtester : public Protester {
  public:
-  RegularProtester(StudentWorld* world, const Position& p)
-      : Protester(world, TID_PROTESTER, p){};
+  explicit RegularProtester(StudentWorld* world)
+      : Protester(world, TID_PROTESTER){};
 
   void doSomething() final;
 };
 
 class HardcoreProtester : public Protester {
  public:
-  HardcoreProtester(StudentWorld* world, const Position& p)
-      : Protester(world, TID_HARD_CORE_PROTESTER, p){};
+  explicit HardcoreProtester(StudentWorld* world)
+      : Protester(world, TID_HARD_CORE_PROTESTER){};
 
   void doSomething() final;
 };

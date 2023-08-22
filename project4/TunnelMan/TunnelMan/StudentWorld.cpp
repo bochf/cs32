@@ -9,8 +9,6 @@
 
 using namespace std;
 
-#define SQUARE(x) (x) * (x)
-
 GameWorld* createStudentWorld(string assetDir) {
   return new StudentWorld(assetDir);
 }
@@ -20,6 +18,16 @@ GameWorld* createStudentWorld(string assetDir) {
 
 int StudentWorld::init() {
   m_player = std::make_unique<TunnelMan>(this);
+  m_actors[TID_BOULDER] = ACTORS();
+  m_actors[TID_BARREL] = ACTORS();
+  m_actors[TID_GOLD] = ACTORS();
+  m_actors[TID_PROTESTER] = ACTORS();
+  m_actors[TID_SONAR] = ACTORS();
+  m_actors[TID_WATER_POOL] = ACTORS();
+  m_actors[TID_WATER_SPURT] = ACTORS();
+  m_pp.reset(getLevel());
+  m_goodieChance = getLevel() * 25 + 300;
+
   createEarth();
 
   // add boulders
@@ -30,6 +38,8 @@ int StudentWorld::init() {
 
   // add oil barrels
   createBarrels();
+
+  addProtester();
 
   return GWSTATUS_CONTINUE_GAME;
 }
@@ -42,19 +52,26 @@ int StudentWorld::move() {
   // Give each Actor a chance to do something
   m_player->doSomething();
 
-  for (auto& actor : m_actors) {
-    // ask each actor to do something (e.g. move)
-    if (actor->alive()) {
+  for (const auto& actors : m_actors) {
+    for (auto& actor : actors.second) {
+      if (!actor->alive()) {
+        continue;
+      }
       // ask each actor to do something (e.g. move)
       actor->doSomething();
 
-      if (!m_player->alive())
+      if (!m_player->alive()) {
+        playSound(SOUND_PLAYER_GIVE_UP);
         return GWSTATUS_PLAYER_DIED;
+      }
       if (levelCompleted()) {
         return GWSTATUS_FINISHED_LEVEL;
       }
     }
   }
+
+  // Add new objects
+  addNewObjects();
 
   // Remove newly-dead actors after each tick
   removeDeadGameObjects();  // delete dead game objects
@@ -76,23 +93,26 @@ int StudentWorld::move() {
 void StudentWorld::cleanUp() {
   m_player = nullptr;
   m_actors.clear();
-  m_earthMap.clear();
+
+  for_each(m_earthMap.begin(), m_earthMap.end(), [](auto& row) {
+    for_each(row.begin(), row.end(), [](auto& earth) { earth = nullptr; });
+  });
 }
 
-int StudentWorld::discover(const Position& p, int radius) {
-  int barrels = 0;
-  for (auto& actor : m_actors) {
-    if (actor->getID() != TID_BARREL && actor->getID() != TID_GOLD) {
-      continue;
-    }
+int StudentWorld::discover(int tid, int radius) {
+  int num = 0;
+  const auto& pair = m_actors.find(tid);
+  if (pair == m_actors.end()) {
+    return 0;
+  }
 
-    if (SQUARE(p.x - actor->getX()) + SQUARE(p.y - actor->getY()) <
-        SQUARE(radius)) {
-      actor->setVisible(true);
-      ++barrels;
+  for (const auto& hiddenObj : pair->second) {
+    if (hiddenObj->distance(*m_player) < radius) {
+      hiddenObj->setVisible(true);
+      ++num;
     }
   }
-  return barrels;
+  return num;
 }
 
 Position StudentWorld::generatePosition(int left,
@@ -100,17 +120,26 @@ Position StudentWorld::generatePosition(int left,
                                         int bottom,
                                         int top,
                                         int radius) const {
-  Position p;
-  do {
-    p.x = rand() % (right - left + 1) + left;  // random number in [left, right]
-    p.y =
-        rand() % (top - bottom + 1) + bottom;  // random number in [bottom, top]
-  } while (any_of(m_actors.begin(), m_actors.end(),
-                  [&, p, radius](const unique_ptr<Actor>& actor) {
-                    return (SQUARE(p.x - actor->getX()) +
-                            SQUARE(p.y - actor->getY())) < SQUARE(radius);
-                  }));
+  Position p(0, 0);
+  while (true) {
+    bool valid = true;
 
+    // generate a random coordinates in range [left, right] and [bottom, top]
+    p.x = rand() % (right - left + 1) + left;
+    p.y = rand() % (top - bottom + 1) + bottom;
+
+    // check it sits in the range of other objects
+    auto tooClose = [&, p, radius](const unique_ptr<Actor>& actor) {
+      return (actor->distance(p) < radius);
+    };
+    for (const auto& pair : m_actors) {
+      valid &= none_of(pair.second.begin(), pair.second.end(), tooClose);
+      if (!valid)
+        continue;
+    }
+    if (valid)
+      break;
+  }
   return p;
 }
 
@@ -121,14 +150,10 @@ Position StudentWorld::generatePosition(int left,
  */
 void StudentWorld::createEarth() {
   for (int row = 0; row < VIEW_HEIGHT; ++row) {
-    m_earthMap.emplace_back();
     for (int col = 0; col < VIEW_WIDTH; ++col) {
-      if (row < 60 && (row < 4 || col < 30 || col > 33)) {
-        Position p{col, row};
-        m_earthMap.back().emplace_back(make_unique<Earth>(this, p));
-      } else {
-        m_earthMap.back().emplace_back(nullptr);
-      }
+      m_earthMap[row][col] = (row < 60 && (row < 4 || col < 30 || col > 33))
+                                 ? make_unique<Earth>(this, Position(col, row))
+                                 : nullptr;
     }
   }
 }
@@ -142,8 +167,8 @@ void StudentWorld::createBoulders() {
     // There must not be any Earth overlapping the 4x4 square region of each
     // Boulder, so we need to clear this Earth out when you place your Boulders
     // within the oil field
-    checkEarth(p, {p.x + 4, p.y + 4}, true);
-    m_actors.emplace_back(make_unique<Boulder>(this, p));
+    checkEarth(p, p + 4, true);
+    m_actors[TID_BOULDER].emplace_back(make_unique<Boulder>(this, p));
   }
 }
 
@@ -153,7 +178,7 @@ void StudentWorld::createGolds() {
   // inclusive
   for (int i = 0; i < numGolds; ++i) {
     auto p = generatePosition(0, 60, 0, 56, 6);
-    m_actors.emplace_back(make_unique<Gold>(this, p));
+    m_actors[TID_GOLD].emplace_back(make_unique<Gold>(this, p));
   }
 }
 
@@ -161,7 +186,7 @@ void StudentWorld::createBarrels() {
   int numBarrels = min(2 + getLevel(), 21U);
   for (int i = 0; i < numBarrels; ++i) {
     const auto p = generatePosition(0, 60, 0, 56, 6);
-    m_actors.emplace_back(make_unique<Barrel>(this, p));
+    m_actors[TID_BARREL].emplace_back(make_unique<Barrel>(this, p));
   }
 }
 
@@ -184,14 +209,25 @@ int StudentWorld::checkEarth(const Position& bottomLeft,
   return n;
 }
 
-bool StudentWorld::walkable(int x, int y) const {
-  if (x < 0 || x > 60 || y < 0 || y > 60)
+void StudentWorld::onBoulderFall(const Boulder& boulder) {
+  if (m_player->overlap(boulder)) {
+    m_player->annoyed(100);
+  }
+  for (const auto& protester : m_actors.at(TID_PROTESTER)) {
+    if (protester->overlap(boulder))
+      protester->annoyed(100);
+  }
+}
+
+bool StudentWorld::walkable(const Position& pos) const {
+  if (pos.x < 0 || pos.y < 0 || pos.x > 60 || pos.y > 60)
     return false;
 
-  return none_of(m_actors.begin(), m_actors.end(),
-                 [&, x, y](const unique_ptr<Actor>& actor) {
-                   return (actor->getID() == TID_BOULDER) &&
-                          actor->overlap({x, y}, {x + 4, y + 4});
+  const auto& boulders = m_actors.at(TID_BOULDER);
+
+  return none_of(boulders.begin(), boulders.end(),
+                 [&, pos](const unique_ptr<Actor>& boulder) {
+                   return boulder->overlap(pos, pos + 4);
                    // although the spec says the TunnelMan can't occupy a square
                    // that is less than or equal to a radius of 3 away from the
                    // center of any Boulder, the behavior of the example program
@@ -227,24 +263,70 @@ void StudentWorld::updateDisplayText() {
 
   int health = 100;
 
-  int oil = 3;
   ostringstream oss;
   oss << "Scr: " << setw(6) << setfill('0') << getScore()
       << "  Lvl: " << setw(2) << setfill(' ') << getLevel()
       << "  Lives: " << setw(1) << getLives() << "  Hlth: " << setw(3) << health
       << "%  Wtr: " << setw(2) << m_player->waterUnits() << "  Gld: " << setw(2)
       << m_player->golds() << "  Sonar: " << setw(2) << m_player->sonarCharges()
-      << "  Oil Left: " << setw(2) << oil;
+      << "  Oil Left: " << setw(2) << m_actors[TID_BARREL].size();
   setGameStatText(oss.str());
 }
 
 bool StudentWorld::levelCompleted() const {
-  // TODO
-  return false;
+  return m_actors.at(TID_BARREL).empty();
+}
+
+void StudentWorld::addNewObjects() {
+  addProtester();
+  if (rand() % m_goodieChance == 0) {
+    if (rand() % 5 == 0)
+      addSonar();
+    else
+      addWaterPool();
+  }
+}
+
+void StudentWorld::addProtester() {
+  if (protesters() < m_pp.m_max && m_pp.m_wait <= 0) {
+    m_pp.resetWaitTime();
+    int tmp = rand() % 100;
+    if (tmp < m_pp.m_hardcoreProbability) {
+      // add a hardcore protester
+      m_actors[TID_PROTESTER].emplace_back(
+          make_unique<HardcoreProtester>(this));
+    } else {
+      // add a regular protester
+      m_actors[TID_PROTESTER].emplace_back(make_unique<RegularProtester>(this));
+    }
+  }
+}
+
+void StudentWorld::addWaterPool() {
+  // add a water pool
+  Position p(0, 0);
+  while (true) {
+    p.x = rand() % 60;
+    p.y = rand() % 60;
+
+    // Water may only be added to a location if the entire 4x4 grid at that
+    // location is free of Earth.
+    if (checkEarth(p, Position{p.x + 4, p.y + 4}, false) == 0) {
+      m_actors[TID_WATER_POOL].emplace_back(make_unique<WaterPool>(this, p));
+      return;
+    }
+  }
+}
+
+void StudentWorld::addSonar() {
+  m_actors[TID_SONAR].emplace_back(make_unique<Sonar>(this));
 }
 
 void StudentWorld::removeDeadGameObjects() {
-  m_actors.erase(remove_if(m_actors.begin(), m_actors.end(),
-                           [](const auto& actor) { return (!actor->alive()); }),
-                 m_actors.end());
+  for (auto& actors : m_actors) {
+    actors.second.erase(
+        remove_if(actors.second.begin(), actors.second.end(),
+                  [](const auto& actor) { return (!actor->alive()); }),
+        actors.second.end());
+  }
 }

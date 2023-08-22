@@ -5,11 +5,15 @@
 #include "GameConstants.h"
 #include "GameWorld.h"
 
+#include <array>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
+
+using ACTORS = std::vector<std::unique_ptr<Actor>>;
 
 class StudentWorld : public GameWorld {
  public:
@@ -24,28 +28,24 @@ class StudentWorld : public GameWorld {
   ///
   /// new methods not inherited from GameWorld
   ///
-  void addActor(std::unique_ptr<Actor> actor) {
-    m_actors.push_back(std::move(actor));
-  }
 
   /**
-   * @brief check the TunnelMan can move to the position or not
-   * the position must be inside the field and greater than 3 away from the
+   * @brief check an actor can move to the destination
+   * the location must be inside the field and greater than 3 away from the
    * center of a Boulder
    * @param x
    * @param y
    * @return true if the TunnelMan can go there
    */
-  bool walkable(int x, int y) const;
+  bool walkable(const Position& pos) const;
 
   /**
    * @brief search all the hidden objects (e.g. oil barrels and gold nuggets)
    * within the radius of a given position and make them visible.
-   * @param p the position
    * @param radius the radius
    * @return number of barrels found
    */
-  int discover(const Position& p, int radius);
+  int discover(int tid, int radius);
 
   /**
    * @brief count how many earth object in the specified area, remove them if
@@ -61,17 +61,57 @@ class StudentWorld : public GameWorld {
                  const Position& topRight,
                  bool clean = true);
 
+  ACTORS& getActors(int tid) { return m_actors.at(tid); };
+  TunnelMan& getPlayer() { return *m_player; }
+
+  void onBoulderFall(const Boulder& boulder);
+
  private:
   std::unique_ptr<TunnelMan> m_player;
-  std::vector<std::unique_ptr<Actor>> m_actors;
-  FIELD m_earthMap;
-  int m_numProtesters = 0;
+  std::unordered_map<int, ACTORS> m_actors;
+
+  std::array<std::array<std::unique_ptr<Earth>, VIEW_WIDTH>, VIEW_HEIGHT>
+      m_earthMap;
+
+  struct ProtesterProperty {
+    // set values by the current game level
+    void reset(int level) {
+      m_interval = std::max(25, 200 - level);
+      m_max = std::min(15.0, 2 + level * 1.5);
+      m_hardcoreProbability = std::min(90, level * 10 + 30);
+      m_wait = 0;
+    }
+
+    void resetWaitTime() { m_wait = m_interval; }
+
+    // A new Protester (Regular or Hardcore) may only be added to the oil field
+    // after at least T ticks have passed since the last Protester of any type
+    // was added, where : int T = max(25, 200 ¨C current_level_number)
+    int m_interval = 200;
+
+    // The target number P of Protesters that should be on the oil field is
+    // equal to: int P = min(15, 2 + current_level_number * 1.5)
+    double m_max = 2;
+
+    // The odds of  the Protester being a Hard Core  Protester(vs.a Regular
+    // Protester) must be determined with this formula
+    // probabilityOfHardcore = min(90, current_level_number * 10 + 30)
+    int m_hardcoreProbability = 30;
+
+    // wait for number of ticks to create a new protester if not full
+    int m_wait = 0;
+  };
+  ProtesterProperty m_pp;
+
+  //  There is a 1 in G chance that a new Water Pool or Sonar Kit Goodie will be
+  //  added to the oil field during any particular tick,
+  int m_goodieChance = 300;
 
   /**
-   * @brief randomly find a valid position to put a Boulder, Gold Nugget and Oil
-   * Barrel
-   * @param left, right, bottom, top define the rectangle the valid position,
-   * inclusive
+   * @brief randomly find a valid position to put a Boulder, Gold Nugget and
+   * Oil Barrel
+   * @param left, right, bottom, top define the rectangle the valid
+   * position, inclusive
    * @param radius the minimal distance of 2 objects
    * @return position
    */
@@ -85,6 +125,7 @@ class StudentWorld : public GameWorld {
   void createBoulders();
   void createGolds();
   void createBarrels();
+  int protesters() const { return m_actors.at(TID_PROTESTER).size(); }
 
   /**
    * @brief update the statistic info of the game
@@ -96,6 +137,15 @@ class StudentWorld : public GameWorld {
    */
   bool levelCompleted() const;
 
+  /**
+   * @brief add new Protesters (Regular or Hardcore) and/or Goodies (Water Pools
+   * or Sonar Kits) to the oil field.
+   */
+  void addNewObjects();
+
+  void addProtester();
+  void addWaterPool();
+  void addSonar();
   /**
    * @brief remove all the dead objects
    */
