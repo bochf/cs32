@@ -63,6 +63,7 @@ class StudentWorld : public GameWorld {
 
   ACTORS& getActors(int tid) { return m_actors.at(tid); };
   TunnelMan& getPlayer() { return *m_player; }
+  const TunnelMan& getPlayer() const { return *m_player; }
 
   void onBoulderFall(const Boulder& boulder);
 

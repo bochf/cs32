@@ -34,8 +34,8 @@ struct Position {
 class Actor : public GraphObject {
  public:
   Actor(StudentWorld* world,
-        int imageID,
-        const Position& p,
+        int tid,
+        const Position& pos,
         bool visible = true,
         Direction dir = right,
         unsigned int depth = 2,
@@ -141,6 +141,39 @@ class Actor : public GraphObject {
   double m_radius;        // the radius of the circumscribed cirel
 };
 
+class Goodie : public Actor {
+ public:
+  enum class Pickable {
+    player,    // pickable by a tunnel man
+    protester  // pickable by a protester
+  };
+
+  Goodie(StudentWorld* world,
+         int tid,
+         const Position& pos,
+         int ttl,
+         bool visible = true,
+         Direction dir = right,
+         unsigned int depth = 2,
+         double size = 1.0);
+
+  bool alive() const override { return m_ttl != 0; }
+  void doSomething() override;
+
+  void setLife(int ttl) { m_ttl = ttl; }
+  void decreaseLife() {
+    if (m_ttl > 0)
+      --m_ttl;
+  };
+  virtual int score() const = 0;
+  virtual Pickable pickable() const { return Pickable::player; }
+
+ private:
+  int m_ttl;
+  int m_score;
+  Pickable m_pickable;
+};
+
 /**
  * 1. image ID: TID_EARTH.
  * 2. start out facing rightward.
@@ -168,35 +201,36 @@ class Earth : public Actor {
  *  They have an image depth of 2
  *  They have a size of 1.0
  */
-class Gold : public Actor {
+class Gold : public Goodie {
  public:
-  enum class Pickable {
-    player,    // pickable by a tunnel man
-    protester  // pickable by a protester
-  };
-
   Gold(StudentWorld* world,
-       const Position& p,
-       const Pickable& pickable = Pickable::player,
-       int ttl = -1  // -1 means perment state
-       )
-      : Actor(world, TID_GOLD, p, false), m_pickable(pickable), m_ttl(ttl){};
-
-  bool alive() const final { return m_ttl == 0; }
+       const Position& pos,
+       const Pickable& pickable = Pickable::player);
 
   void doSomething() final;
+
+  int score() const final;
+  Pickable pickable() const final { return m_pickable; }
 
  private:
   Pickable m_pickable;
-  int m_ttl;  // time to live
 };
 
-class Sonar : public Actor {
+/**
+ * @brief class Sonar
+ * 1. ImageID: TID_SONAR
+ * 2. start off facing rightward
+ * 3. visible: true
+ * 4. pickable by TunnelMan
+ * 5. temprary state, exists in max(100, 300 ¨C 10*current_level_number) ticks
+ * 6. depth: 2
+ * 7. size: 1.0
+ */
+class Sonar : public Goodie {
  public:
-  explicit Sonar(StudentWorld* world)
-      : Actor(world, TID_SONAR, Position{0, 60}){};
+  explicit Sonar(StudentWorld* world);
 
-  void doSomething() final;
+  int score() const final { return 75; }
 };
 
 /**
@@ -226,7 +260,7 @@ class TunnelMan : public Actor {
   int sonarCharges() const { return m_sonarCharges; }
   int golds() const { return m_golds; }
 
-  void pickGold() final { m_golds++; }
+  void pickGoodie(Goodie& goodie);
 
   /**
    * @brief the TunnelMan drop a gold nugget when TAB key is pressed
@@ -358,12 +392,23 @@ class Barrel : public Actor {
   bool m_alive = true;
 };
 
-class WaterPool : public Actor {
+/**
+ * @brief class WaterPool
+ * 1. ImageID: TID_WATER_POOL
+ * 2. location: x, y
+ * 3. starts off facing right
+ * 4. visible: true
+ * 5. pickup-able by TunnelMan
+ * 6. starts off temporary state, exists max(100, 300 ¨C 10*current_level_number)
+ * ticks
+ * 7. depth: 2
+ * 8. size: 1.0
+ */
+class WaterPool : public Goodie {
  public:
-  WaterPool(StudentWorld* world, const Position& p)
-      : Actor(world, TID_WATER_POOL, p){};
+  WaterPool(StudentWorld* world, const Position& pos);
 
-  void doSomething() final;
+  int score() const final { return 100; }
 };
 
 class Protester : public Actor {
@@ -378,6 +423,17 @@ class Protester : public Actor {
   bool m_alive = true;
 };
 
+/**
+ * @brief class RegularProtester
+ * 1. ImageID: TID_PROTESTER
+ * 2. starts off facing left
+ * 3. decide how many squares to move in the current direction in range [8, 60]
+ * 4. starts out with 5 hit-points
+ * 5, starts out NOT in leave-the-oil-field state
+ * 6. depth:0
+ * 7. size: 1.0
+ * 8. visible: true
+ */
 class RegularProtester : public Protester {
  public:
   explicit RegularProtester(StudentWorld* world)
@@ -386,6 +442,17 @@ class RegularProtester : public Protester {
   void doSomething() final;
 };
 
+/**
+ * @brief class HardcoreProtester
+ * 1. ImageID: TID_HARD_CORE_PROTESTER
+ * 2. starts off facing left
+ * 3. decide how many squares to move in the current direction in range [8, 60]
+ * 4. starts out with 20 hit-points
+ * 5, starts out NOT in leave-the-oil-field state
+ * 6. depth:0
+ * 7. size: 1.0
+ * 8. visible: true
+ */
 class HardcoreProtester : public Protester {
  public:
   explicit HardcoreProtester(StudentWorld* world)

@@ -37,13 +37,13 @@ double len(const Position& p1, const Position& p2) {
 //////////////////////////////////////////////////////////////////////////////
 // Actor
 Actor::Actor(StudentWorld* world,
-             int imageID,
-             const Position& p,
+             int tid,
+             const Position& pos,
              bool visible,
              Direction dir,
              unsigned int depth,
              double size)
-    : GraphObject(imageID, p.x, p.y, dir, size, depth),
+    : GraphObject(tid, pos.x, pos.y, dir, size, depth),
       m_world(world),
       m_radius(getSize() * 2 * sqrt(2)) {
   setVisible(visible);
@@ -85,6 +85,36 @@ Position Actor::directionalPosition(int dist) const {
       return Position(getX(), getY() - dist);
     default:
       return Position(getX(), getY());
+  }
+}
+
+Goodie::Goodie(StudentWorld* world,
+               int tid,
+               const Position& pos,
+               int ttl,
+               bool visible,
+               Direction dir,
+               unsigned int depth,
+               double size)
+    : Actor(world, tid, pos, visible, dir, 2, size), m_ttl(ttl) {}
+
+void Goodie::doSomething() {
+  decreaseLife();
+
+  auto& player = world()->getPlayer();
+  if (distance(player) <= 3 && pickable() == Pickable::player) {
+    // if the goodie is pickup-able by the TunnelMan and it is within a
+    // radius of 3.0(<= 3.00 units away) from the TunnelMan, then the it
+    // will activate, and:
+    //  a. set its state to dead
+    //
+    //  b.play a sound effect to indicate that the TunnelMan picked up the
+    //  Goodie : SOUND_GOT_GOODIE.
+    //
+    //  c.increases the player¡¯s score by some points
+    //
+    //  d. update player's inventory.
+    player.pickGoodie(*this);
   }
 }
 
@@ -149,13 +179,32 @@ void TunnelMan::fire() {
     return;
   }
 
-  const auto p = directionalPosition(4);
-  // world()->addActor(make_unique<Squirt>(world(), p, getDirection()));
+  --m_waterUnits;
   world()
       ->getActors(TID_WATER_SPURT)
-      .emplace_back(make_unique<Squirt>(world(), p, getDirection()));
-  Squirt squirt(world(), p, getDirection());
+      .emplace_back(
+          make_unique<Squirt>(world(), directionalPosition(4), getDirection()));
   Game().playSound(SOUND_PLAYER_SQUIRT);
+}
+
+void TunnelMan::pickGoodie(Goodie& goodie) {
+  switch (goodie.getID()) {
+    case TID_WATER_POOL:
+      m_waterUnits += 5;
+      break;
+    case TID_SONAR:
+      ++m_sonarCharges;
+      break;
+    case TID_GOLD:
+      ++m_golds;
+      break;
+    default:
+      return;
+  }
+  goodie.setVisible(true);
+  goodie.setLife(0);
+  world()->playSound(SOUND_GOT_GOODIE);
+  world()->increaseScore(goodie.score());
 }
 
 void TunnelMan::move(int key) {
@@ -189,7 +238,7 @@ void TunnelMan::dropGold() {
   if (m_golds > 0) {
     --m_golds;
     world()->getActors(TID_GOLD).emplace_back(make_unique<Gold>(
-        world(), directionalPosition(4), Gold::Pickable::protester, 100));
+        world(), directionalPosition(4), Gold::Pickable::protester));
   }
 }
 
@@ -325,14 +374,24 @@ void Barrel::doSomething() {
 
 //////////////////////////////////////////////////////////////////////////////
 // Gold
+Gold::Gold(StudentWorld* world, const Position& pos, const Pickable& pickable)
+    : Goodie(world,
+             TID_GOLD,
+             pos,
+             pickable == Pickable::player ? -1 : 100,
+             pickable == Pickable::player ? false : true),
+      m_pickable(pickable) {}
+
+int Gold::score() const {
+  return m_pickable == Pickable::player ? 10 : 25;
+}
+
 void Gold::doSomething() {
   if (!alive()) {
     return;
   }
 
-  if (m_ttl > 0) {
-    --m_ttl;
-  }
+  decreaseLife();
 
   TunnelMan& player = world()->getPlayer();
   double awayFromPlayer = distance(player);
@@ -344,7 +403,7 @@ void Gold::doSomething() {
     return;
   }
 
-  if (awayFromPlayer <= 3 && m_pickable == Pickable::player) {
+  if (awayFromPlayer <= 3 && pickable() == Pickable::player) {
     // if the Gold Nugget is pickup-able by the TunnelMan and it is within a
     // radius of 3.0(<= 3.00 units away) from the TunnelMan, then the Gold
     // Nugget will activate, and:
@@ -358,13 +417,10 @@ void Gold::doSomething() {
     //  d.The Gold Nugget must tell the TunnelMan object that it justreceived
     //     a new Nugget so it can update its inventory.
     setVisible(true);
-    m_ttl = 0;
-    world()->playSound(SOUND_GOT_GOODIE);
-    world()->increaseScore(10);
-    player.pickGold();
+    player.pickGoodie(*this);
   }
 
-  if (m_pickable == Pickable::protester) {
+  if (pickable() == Pickable::protester) {
     // if the Gold Nugget is pickup-able by Protesters and it is within a radius
     // of 3.0(<= 3.00 units away) from a Protester, then the Gold Nugget will
     // activate, and:
@@ -380,7 +436,7 @@ void Gold::doSomething() {
     //    d. The Gold Nugget increases the player¡¯s score by 25 points
     for (auto const& protester : world()->getActors(TID_PROTESTER)) {
       if (distance(*protester) <= 3) {
-        m_ttl = 0;
+        setLife(0);
         world()->playSound(SOUND_PROTESTER_FOUND_GOLD);
         world()->increaseScore(25);
         protester->pickGold();
@@ -391,15 +447,20 @@ void Gold::doSomething() {
 
 //////////////////////////////////////////////////////////////////////////////
 // Sonar
-void Sonar::doSomething() {
-  // TODO
-}
+Sonar::Sonar(StudentWorld* world)
+    : Goodie(world,
+             TID_SONAR,
+             Position(0, 60),
+             max(100U, 300 - 10 * world->getLevel())) {}
 
 //////////////////////////////////////////////////////////////////////////////
 // WaterPool
-void WaterPool::doSomething() {
-  // TODO
-}
+WaterPool::WaterPool(StudentWorld* world, const Position& pos)
+    : Goodie(world,
+             TID_WATER_POOL,
+             pos,
+             max(100U, 300 - 10 * world->getLevel()),
+             100) {}
 
 //////////////////////////////////////////////////////////////////////////////
 // RegularProtester
