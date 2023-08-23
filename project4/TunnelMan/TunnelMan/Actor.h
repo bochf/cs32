@@ -152,26 +152,37 @@ class Goodie : public Actor {
          int tid,
          const Position& pos,
          int ttl,
-         bool visible = true,
-         Direction dir = right,
-         unsigned int depth = 2,
-         double size = 1.0);
+         bool visible);
 
   bool alive() const override { return m_ttl != 0; }
   void doSomething() override;
 
-  void setLife(int ttl) { m_ttl = ttl; }
+  /**
+   * @brief the score contributed by the object when it is picked up
+   */
+  virtual int score() const = 0;
+
+  /**
+   * @brief who can pickup the object
+   */
+  virtual Pickable pickable() const { return Pickable::player; }
+
+  /**
+   * @brief set the object to dead
+   */
+  void die() { m_ttl = 0; }
+
+  /**
+   * @brief  decrease the life of the object by 1 tick if it is in temporary
+   * state
+   */
   void decreaseLife() {
     if (m_ttl > 0)
       --m_ttl;
   };
-  virtual int score() const = 0;
-  virtual Pickable pickable() const { return Pickable::player; }
 
  private:
-  int m_ttl;
-  int m_score;
-  Pickable m_pickable;
+  int m_ttl;  // ticks to live, -1 means the object is stable
 };
 
 /**
@@ -413,21 +424,53 @@ class WaterPool : public Goodie {
 
 class Protester : public Actor {
  public:
-  Protester(StudentWorld* world, int tid)
-      : Actor(world, tid, {60, 60}, true, Direction::left){};
+  Protester(StudentWorld* world, int tid, int hitPoints)
+      : Actor(world, tid, {60, 60}, true, Direction::left),
+        m_hitPoints(hitPoints) {
+    recalculateSteps();
+  };
 
-  bool alive() const final { return m_alive; }
+  bool alive() const final {
+    // the protester is dead if it is in leave-the-oil-field state and reaches
+    // the original position (60,60)
+    return !(m_leaving && getX() == 60 && getY() == 60);
+  }
+
+  void doSomething() override;
+
   void pickGold() final{};
 
  private:
-  bool m_alive = true;
+  bool m_leaving = false;  // the protester is leaving the oil field
+  int m_hitPoints;
+  int m_ttw;           // ticks to wait between moves
+  int m_silent = 15;   // non-resting ticks to wait before shout again
+  int m_stepsForward;  // number of squares the protester will move on its
+                       // current direction before change direction
+
+  // reset the ticks to wait to max(0, 3-current_level/4)
+  void resetTtw();
+
+  // go back the exit point (60,60)
+  void exit();
+
+  // check the protester is facing to the TunnelMan
+  bool faceToPlayer(const TunnelMan& player) const;
+
+  // annoy the TunnelMan
+  void shout(TunnelMan& player);
+
+  void recalculateSteps() {
+    m_stepsForward = rand() % 53 + 8;  // a random number in [8, 60]
+  }
 };
 
 /**
  * @brief class RegularProtester
  * 1. ImageID: TID_PROTESTER
  * 2. starts off facing left
- * 3. decide how many squares to move in the current direction in range [8, 60]
+ * 3. decide how many squares to move in the current direction in range [8,
+ * 60]
  * 4. starts out with 5 hit-points
  * 5, starts out NOT in leave-the-oil-field state
  * 6. depth:0
@@ -437,7 +480,7 @@ class Protester : public Actor {
 class RegularProtester : public Protester {
  public:
   explicit RegularProtester(StudentWorld* world)
-      : Protester(world, TID_PROTESTER){};
+      : Protester(world, TID_PROTESTER, 5){};
 
   void doSomething() final;
 };
@@ -446,7 +489,8 @@ class RegularProtester : public Protester {
  * @brief class HardcoreProtester
  * 1. ImageID: TID_HARD_CORE_PROTESTER
  * 2. starts off facing left
- * 3. decide how many squares to move in the current direction in range [8, 60]
+ * 3. decide how many squares to move in the current direction in range [8,
+ * 60]
  * 4. starts out with 20 hit-points
  * 5, starts out NOT in leave-the-oil-field state
  * 6. depth:0
@@ -456,7 +500,7 @@ class RegularProtester : public Protester {
 class HardcoreProtester : public Protester {
  public:
   explicit HardcoreProtester(StudentWorld* world)
-      : Protester(world, TID_HARD_CORE_PROTESTER){};
+      : Protester(world, TID_HARD_CORE_PROTESTER, 20){};
 
   void doSomething() final;
 };

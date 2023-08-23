@@ -88,15 +88,14 @@ Position Actor::directionalPosition(int dist) const {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Goodie
 Goodie::Goodie(StudentWorld* world,
                int tid,
                const Position& pos,
                int ttl,
-               bool visible,
-               Direction dir,
-               unsigned int depth,
-               double size)
-    : Actor(world, tid, pos, visible, dir, 2, size), m_ttl(ttl) {}
+               bool visible)
+    : Actor(world, tid, pos, visible, Direction::right, 2, 1.0), m_ttl(ttl) {}
 
 void Goodie::doSomething() {
   decreaseLife();
@@ -202,7 +201,7 @@ void TunnelMan::pickGoodie(Goodie& goodie) {
       return;
   }
   goodie.setVisible(true);
-  goodie.setLife(0);
+  goodie.die();
   world()->playSound(SOUND_GOT_GOODIE);
   world()->increaseScore(goodie.score());
 }
@@ -436,7 +435,7 @@ void Gold::doSomething() {
     //    d. The Gold Nugget increases the player¡¯s score by 25 points
     for (auto const& protester : world()->getActors(TID_PROTESTER)) {
       if (distance(*protester) <= 3) {
-        setLife(0);
+        die();
         world()->playSound(SOUND_PROTESTER_FOUND_GOLD);
         world()->increaseScore(25);
         protester->pickGold();
@@ -451,7 +450,8 @@ Sonar::Sonar(StudentWorld* world)
     : Goodie(world,
              TID_SONAR,
              Position(0, 60),
-             max(100U, 300 - 10 * world->getLevel())) {}
+             max(100U, 300 - 10 * world->getLevel()),
+             true) {}
 
 //////////////////////////////////////////////////////////////////////////////
 // WaterPool
@@ -460,8 +460,61 @@ WaterPool::WaterPool(StudentWorld* world, const Position& pos)
              TID_WATER_POOL,
              pos,
              max(100U, 300 - 10 * world->getLevel()),
-             100) {}
+             true) {}
 
+//////////////////////////////////////////////////////////////////////////////
+// Protester
+void Protester::doSomething() {
+  if (!alive()) {
+    return;
+  }
+
+  if (m_ttw-- > 0) {
+    return;
+  }
+
+  resetTtw();
+
+  if (m_leaving) {
+    // TODO leave the oil field
+    exit();
+    return;
+  }
+
+  TunnelMan& player = world()->getPlayer();
+  double awayFromPlayer = distance(player);
+  if (awayFromPlayer <= 4 && faceToPlayer(player) && m_silent <= 0) {
+    shout(player);
+    return;
+  }
+}
+
+void Protester::resetTtw() {
+  m_ttw = max(0, 3 - static_cast<int>(world()->getLevel()) / 4);
+}
+
+void Protester::exit() {}
+
+bool Protester::faceToPlayer(const TunnelMan& player) const {
+  switch (getDirection()) {
+    case Direction::down:
+      return getY() > player.getY();
+    case Direction::left:
+      return getX() > player.getX();
+    case Direction::right:
+      return getX() < player.getX();
+    case Direction::up:
+      return getY() < player.getY();
+    default:
+      return false;
+  }
+}
+
+void Protester::shout(TunnelMan& player) {
+  world()->playSound(SOUND_PROTESTER_YELL);
+  player.annoyed(2);
+  m_silent = 15;
+}
 //////////////////////////////////////////////////////////////////////////////
 // RegularProtester
 void RegularProtester::doSomething() {
