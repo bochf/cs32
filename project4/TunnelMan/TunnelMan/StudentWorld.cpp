@@ -219,10 +219,7 @@ void StudentWorld::onBoulderFall(const Boulder& boulder) {
   }
 }
 
-bool StudentWorld::walkable(const Position& pos) const {
-  if (pos.x < 0 || pos.y < 0 || pos.x > 60 || pos.y > 60)
-    return false;
-
+bool StudentWorld::noBoulder(const Position& pos) const {
   const auto& boulders = m_actors.at(TID_BOULDER);
 
   return none_of(boulders.begin(), boulders.end(),

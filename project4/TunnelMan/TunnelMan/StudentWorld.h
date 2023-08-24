@@ -28,6 +28,16 @@ class StudentWorld : public GameWorld {
   ///
   /// new methods not inherited from GameWorld
   ///
+  /**
+   * @brief check the coordinates of the bottom left corner of a 4 * 4  object
+   * is valid or not, it must be in the oil field
+   * @param pos the coordinates
+   * @return true if in the oil field
+   */
+  bool validPosition(const Position& pos) const {
+    return (pos.x >= 0 && pos.x <= VIEW_WIDTH - 4 && pos.y >= 0 &&
+            pos.y <= VIEW_HEIGHT - 4);
+  }
 
   /**
    * @brief check an actor can move to the destination
@@ -37,7 +47,7 @@ class StudentWorld : public GameWorld {
    * @param y
    * @return true if the TunnelMan can go there
    */
-  bool walkable(const Position& pos) const;
+  bool noBoulder(const Position& pos) const;
 
   /**
    * @brief search all the hidden objects (e.g. oil barrels and gold nuggets)

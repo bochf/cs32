@@ -3,6 +3,7 @@
 #include "GameController.h"
 #include "StudentWorld.h"
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -73,8 +74,8 @@ bool Actor::inCircle(const Actor& other, double r) const {
   return len(c1, c2) > other.radius() + r;
 }
 
-Position Actor::directionalPosition(int dist) const {
-  switch (getDirection()) {
+Position Actor::directionalPosition(int dist, const Direction& dir) const {
+  switch (dir) {
     case Direction::left:
       return Position(getX() - dist, getY());
     case right:
@@ -181,8 +182,8 @@ void TunnelMan::fire() {
   --m_waterUnits;
   world()
       ->getActors(TID_WATER_SPURT)
-      .emplace_back(
-          make_unique<Squirt>(world(), directionalPosition(4), getDirection()));
+      .emplace_back(make_unique<Squirt>(
+          world(), directionalPosition(4, getDirection()), getDirection()));
   Game().playSound(SOUND_PLAYER_SQUIRT);
 }
 
@@ -209,9 +210,13 @@ void TunnelMan::pickGoodie(Goodie& goodie) {
 void TunnelMan::move(int key) {
   const auto dir = keyToDirection(key);
   if (getDirection() == dir) {  // same direction, move forward
-    const auto p = directionalPosition(1);
-    if (world()->walkable(p)) {
-      moveTo(p.x, p.y);
+    const auto target = directionalPosition(1, dir);
+    if (!world()->validPosition(target)) {
+      return;
+    }
+
+    if (world()->noBoulder(target)) {
+      moveTo(target.x, target.y);
     }
   } else {
     // different direction, turn
@@ -236,8 +241,9 @@ void TunnelMan::scanField() {
 void TunnelMan::dropGold() {
   if (m_golds > 0) {
     --m_golds;
-    world()->getActors(TID_GOLD).emplace_back(make_unique<Gold>(
-        world(), directionalPosition(4), Gold::Pickable::protester));
+    world()->getActors(TID_GOLD).emplace_back(
+        make_unique<Gold>(world(), directionalPosition(4, getDirection()),
+                          Gold::Pickable::protester));
   }
 }
 
@@ -318,7 +324,7 @@ void Squirt::doSomething() {
     return;
   }
 
-  const auto p = directionalPosition(1);
+  const auto p = directionalPosition(1, getDirection());
   const Position topRight{p.x + 4, p.y + 4};
   if (world()->checkEarth(p, topRight, false) > 0) {
     m_distance = 0;  // the squirt hits on earth, dies
@@ -487,6 +493,43 @@ void Protester::doSomething() {
     shout(player);
     return;
   }
+
+  // if if the Protester:
+  //    a.Is in a straight horizontal or vertical line of sight to the
+  //    TunnelMan(even if the Regular Protester isn¡¯t currently facing the
+  //    TunnelMan), and
+  //    b.Is more than 4 units away from the TunnelMan, and
+  //    c.Could actually move the entire way to the TunnelMan with no Earth or
+  //    Boulders blocking its path  const auto dir = straightToPlayer(player);
+  auto dir = straightToPlayer(player);
+  if (dir != Direction::none) {
+    setDirection(dir);  // turn to the player
+    const auto target = directionalPosition(1, dir);
+    moveTo(target.x, target.y);  // move 1 step forward to the player
+    m_stepsForward = 0;  // set its numSquaresToMoveInCurrentDirection value to
+                         // zero, forcing it to pick a new direction/distance to
+                         // move during its next non-resting tick
+    return;
+  }
+
+  --m_stepsForward;
+  // if the Protester has finished walking numSquaresToMoveInCurrentDirection
+  // steps in its currently-selected direction
+  if (m_stepsForward <= 0) {
+    // pick a new direction which is moveable
+    Direction dir = none;
+    do {
+      dir = static_cast<Direction>(rand() % 4 + 1);
+    } while (!moveable(dir));
+
+    recalculateSteps();
+    setDirection(dir);
+    auto target = directionalPosition(1, dir);
+    moveTo(target.x, target.y);
+  }
+
+  // sitting in a intersection
+  {}
 }
 
 void Protester::resetTtw() {
@@ -515,6 +558,46 @@ void Protester::shout(TunnelMan& player) {
   player.annoyed(2);
   m_silent = 15;
 }
+
+GraphObject::Direction Protester::straightToPlayer(const TunnelMan& player) {
+  if (distance(player) < 4)
+    return Direction::none;
+
+  auto bl = Position(min(getX(), player.getX()), min(getY(), player.getY()));
+  auto tr =
+      Position(max(getX(), player.getX()) + 4, max(getY(), player.getY()) + 4);
+  if (world()->checkEarth(bl, tr, false) > 0) {
+    // any Earth object in the rectangle
+    return Direction::none;
+  }
+  auto& boulders = world()->getActors(TID_BARREL);
+  if (any_of(boulders.begin(), boulders.end(),
+             [&, bl, tr](unique_ptr<Actor> const& actor) {
+               return actor->overlap(bl, tr);
+             })) {
+    // any boulder on the way
+    return Direction::none;
+  }
+
+  if (getX() == player.getX()) {
+    getY() < player.getY() ? Direction::up : Direction::down;
+  }
+
+  if (getY() == player.getY()) {
+    return getX() < player.getX() ? Direction::right : Direction::left;
+  }
+
+  return Direction::none;
+}
+
+bool Protester::moveable(const Direction& dir) {
+  const auto target = directionalPosition(1, dir);
+  return (world()->validPosition(target) &&
+          world()->checkEarth(target, target + 4, false) == 0 &&
+          world()->noBoulder(target));  // no earth no boulder in front
+}
+
+/*
 //////////////////////////////////////////////////////////////////////////////
 // RegularProtester
 void RegularProtester::doSomething() {
@@ -526,3 +609,4 @@ void RegularProtester::doSomething() {
 void HardcoreProtester::doSomething() {
   // TODO
 }
+*/

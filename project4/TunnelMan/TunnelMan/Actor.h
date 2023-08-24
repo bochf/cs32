@@ -131,7 +131,7 @@ class Actor : public GraphObject {
    * @param dist the distance from the TunnelMan
    * @return the new corrdinates
    */
-  Position directionalPosition(int dist) const;
+  Position directionalPosition(int dist, const Direction& dir) const;
 
  private:
   Actor() = delete;
@@ -445,6 +445,7 @@ class Protester : public Actor {
   int m_hitPoints;
   int m_ttw;           // ticks to wait between moves
   int m_silent = 15;   // non-resting ticks to wait before shout again
+  int m_ttt = 200;     // non-resting ticks to wait before make a turn
   int m_stepsForward;  // number of squares the protester will move on its
                        // current direction before change direction
 
@@ -459,6 +460,18 @@ class Protester : public Actor {
 
   // annoy the TunnelMan
   void shout(TunnelMan& player);
+
+  // if the protester is in a straight horizontal or vertical line of sight to
+  // the TunnelMan and more than 4 units away from the TunnelMan and no Earth or
+  // Boulder blocking its path, get the direction to TunnelMan.
+  // otherwise return Direction::none
+  Direction straightToPlayer(const TunnelMan& player);
+
+  // check the Protester can move one step on the direction
+  bool moveable(const Direction& dir);
+
+  // turn 90 degrees at a intersection if turnable
+  Direction changeDirection();
 
   void recalculateSteps() {
     m_stepsForward = rand() % 53 + 8;  // a random number in [8, 60]
@@ -482,7 +495,7 @@ class RegularProtester : public Protester {
   explicit RegularProtester(StudentWorld* world)
       : Protester(world, TID_PROTESTER, 5){};
 
-  void doSomething() final;
+  // void doSomething() final;
 };
 
 /**
@@ -502,7 +515,7 @@ class HardcoreProtester : public Protester {
   explicit HardcoreProtester(StudentWorld* world)
       : Protester(world, TID_HARD_CORE_PROTESTER, 20){};
 
-  void doSomething() final;
+  // void doSomething() final;
 };
 
 #endif  // ACTOR_H_
