@@ -47,9 +47,9 @@ int StudentWorld::init() {
 int StudentWorld::move() {
   // Update the Game Status Line
   updateDisplayText();  // update the score/lives/level text at screen top
-  // The term ¡°Actors¡± refers to all Protesters, the player, Goodies,
-  // Boulders, Barrels of oil, Holes, Squirts, the Exit, etc.
-  // Give each Actor a chance to do something
+
+  --m_pp.m_wait;  // update the new protester waiting time
+
   m_player->doSomething();
 
   for (const auto& actors : m_actors) {
@@ -167,7 +167,7 @@ void StudentWorld::createBoulders() {
     // There must not be any Earth overlapping the 4x4 square region of each
     // Boulder, so we need to clear this Earth out when you place your Boulders
     // within the oil field
-    checkEarth(p, p + 4, true);
+    removeEarth(p, p + 4);
     m_actors[TID_BOULDER].emplace_back(make_unique<Boulder>(this, p));
   }
 }
@@ -190,23 +190,35 @@ void StudentWorld::createBarrels() {
   }
 }
 
-int StudentWorld::checkEarth(const Position& bottomLeft,
-                             const Position& topRight,
-                             bool clean) {
-  int n = 0;
+bool StudentWorld::removeEarth(const Position& bottomLeft,
+                               const Position& topRight) {
+  bool hasEarth = false;
   for (int x = bottomLeft.x; x < topRight.x; ++x) {
     for (int y = bottomLeft.y; y < topRight.y; ++y) {
-      if (!m_earthMap[y][x]) {
-        continue;
-      }
-
-      ++n;
-      if (clean) {
+      if (m_earthMap[y][x]) {
+        hasEarth = true;
         m_earthMap[y][x] = nullptr;
       }
     }
   }
-  return n;
+
+  if (hasEarth) {
+    playSound(SOUND_DIG);
+  }
+
+  return hasEarth;
+}
+
+bool StudentWorld::hasEarth(const Position& bottomLeft,
+                            const Position& topRight) const {
+  for (int x = bottomLeft.x; x < topRight.x; ++x) {
+    for (int y = bottomLeft.y; y < topRight.y; ++y) {
+      if (m_earthMap[y][x]) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void StudentWorld::onBoulderFall(const Boulder& boulder) {
@@ -308,7 +320,7 @@ void StudentWorld::addWaterPool() {
 
     // Water may only be added to a location if the entire 4x4 grid at that
     // location is free of Earth.
-    if (checkEarth(p, Position{p.x + 4, p.y + 4}, false) == 0) {
+    if (!hasEarth(p, p + 4)) {
       m_actors[TID_WATER_POOL].emplace_back(make_unique<WaterPool>(this, p));
       return;
     }

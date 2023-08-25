@@ -124,6 +124,7 @@ class Actor : public GraphObject {
 
  protected:
   StudentWorld* world() { return m_world; }
+  const StudentWorld* world() const { return m_world; }
 
   /**
    * @brief get the new position based on the current position, direction and
@@ -162,11 +163,18 @@ class Goodie : public Actor {
    */
   virtual int score() const = 0;
 
+  virtual int sound() const { return SOUND_GOT_GOODIE; }
+
   /**
    * @brief who can pickup the object
    */
   virtual Pickable pickable() const { return Pickable::player; }
 
+  /**
+   * @brief check the distance from the TunnelMan, do something accordingly if
+   * close
+   */
+  virtual void detectPlayer();
   /**
    * @brief set the object to dead
    */
@@ -271,7 +279,7 @@ class TunnelMan : public Actor {
   int sonarCharges() const { return m_sonarCharges; }
   int golds() const { return m_golds; }
 
-  void pickGoodie(Goodie& goodie);
+  void pickupGoodie(Goodie& goodie);
 
   /**
    * @brief the TunnelMan drop a gold nugget when TAB key is pressed
@@ -348,7 +356,7 @@ class Boulder : public Actor {
    * @brief check the Boulder object is above any Earth object
    * @return true if there is any Earth in the 4 squares immediately below it.
    */
-  bool onEarth();
+  bool onEarth() const;
 
   /**
    * @brief check the Boulder object hits any other boulders
@@ -390,17 +398,13 @@ class Squirt : public Actor {
  * 5. Size: 1.0
  * 6. Visible: false
  */
-class Barrel : public Actor {
+class Barrel : public Goodie {
  public:
-  Barrel(StudentWorld* world, const Position& p)
-      : Actor(world, TID_BARREL, p, false){};
+  Barrel(StudentWorld* world, const Position& pos)
+      : Goodie(world, TID_BARREL, pos, -1, false){};
 
-  bool alive() const final { return m_alive; }
-
-  void doSomething() final;
-
- private:
-  bool m_alive = true;
+  int score() const final { return 1000; }
+  int sound() const final { return SOUND_FOUND_OIL; }
 };
 
 /**
@@ -440,12 +444,29 @@ class Protester : public Actor {
 
   void pickGold() final{};
 
+ protected:
+  // move closer to the player if the TunnelMan is detected
+  // return true if action been taken
+  virtual bool chasePlayer() { return false; }
+
+  // random walk without knowing where the TunnelMan is
+  virtual void randomWalk();
+
+  void resetSteps() { m_stepsForward = 0; }
+
+  // if the protester is in a straight horizontal or vertical line of sight to
+  // the TunnelMan and more than 4 units away from the TunnelMan and no Earth or
+  // Boulder blocking its path, get the direction to TunnelMan.
+  // otherwise return Direction::none
+  Direction straightToPlayer(const TunnelMan& player) const;
+
  private:
   bool m_leaving = false;  // the protester is leaving the oil field
   int m_hitPoints;
-  int m_ttw;           // ticks to wait between moves
-  int m_silent = 15;   // non-resting ticks to wait before shout again
-  int m_ttt = 200;     // non-resting ticks to wait before make a turn
+  int m_ttw;      // ticks to wait between moves
+  int m_tts = 0;  // non-resting ticks to wait before shouting again
+  int m_ttt =
+      200;  // non-resting ticks to wait before making a perpendicular turn
   int m_stepsForward;  // number of squares the protester will move on its
                        // current direction before change direction
 
@@ -461,14 +482,13 @@ class Protester : public Actor {
   // annoy the TunnelMan
   void shout(TunnelMan& player);
 
-  // if the protester is in a straight horizontal or vertical line of sight to
-  // the TunnelMan and more than 4 units away from the TunnelMan and no Earth or
-  // Boulder blocking its path, get the direction to TunnelMan.
-  // otherwise return Direction::none
-  Direction straightToPlayer(const TunnelMan& player);
+  /**
+   * @brief randomly pickup a new direction.
+   */
+  void newDirection();
 
   // check the Protester can move one step on the direction
-  bool moveable(const Direction& dir);
+  bool moveable(const Direction& dir) const;
 
   // turn 90 degrees at a intersection if turnable
   Direction changeDirection();
@@ -494,6 +514,10 @@ class RegularProtester : public Protester {
  public:
   explicit RegularProtester(StudentWorld* world)
       : Protester(world, TID_PROTESTER, 5){};
+
+ protected:
+  // turn to the TunnelMan if the TunnelMan can be straight seen
+  bool chasePlayer() final;
 
   // void doSomething() final;
 };

@@ -100,21 +100,23 @@ Goodie::Goodie(StudentWorld* world,
 
 void Goodie::doSomething() {
   decreaseLife();
+  detectPlayer();
+}
+
+void Goodie::detectPlayer() {
+  if (pickable() != Pickable::player) {
+    return;
+  }
 
   auto& player = world()->getPlayer();
-  if (distance(player) <= 3 && pickable() == Pickable::player) {
+  double dist = distance(player);
+  if (dist <= 3) {
     // if the goodie is pickup-able by the TunnelMan and it is within a
-    // radius of 3.0(<= 3.00 units away) from the TunnelMan, then the it
-    // will activate, and:
-    //  a. set its state to dead
-    //
-    //  b.play a sound effect to indicate that the TunnelMan picked up the
-    //  Goodie : SOUND_GOT_GOODIE.
-    //
-    //  c.increases the player¡¯s score by some points
-    //
-    //  d. update player's inventory.
-    player.pickGoodie(*this);
+    // radius of 3.0(<= 3.00 units away) from the TunnelMan, call TunnelMan's
+    // pickupGoodie method
+    player.pickupGoodie(*this);
+  } else if (dist <= 4) {
+    setVisible(true);
   }
 }
 
@@ -127,8 +129,7 @@ void TunnelMan::doSomething() {
   }
 
   // if overlap any earth object, dig it
-  if (world()->checkEarth(bottomLeft(), topRight(), true)) {
-    Game().playSound(SOUND_DIG);
+  if (world()->removeEarth(bottomLeft(), topRight())) {
     return;
   }
 
@@ -187,7 +188,12 @@ void TunnelMan::fire() {
   Game().playSound(SOUND_PLAYER_SQUIRT);
 }
 
-void TunnelMan::pickGoodie(Goodie& goodie) {
+void TunnelMan::pickupGoodie(Goodie& goodie) {
+  // if the goodie is pickup-able by the TunnelMan and it is within a
+  // radius of 3.0(<= 3.00 units away) from the TunnelMan, then the it
+  // will
+
+  // update inventory
   switch (goodie.getID()) {
     case TID_WATER_POOL:
       m_waterUnits += 5;
@@ -198,13 +204,15 @@ void TunnelMan::pickGoodie(Goodie& goodie) {
     case TID_GOLD:
       ++m_golds;
       break;
+    case TID_BARREL:
+      break;
     default:
       return;
   }
-  goodie.setVisible(true);
-  goodie.die();
-  world()->playSound(SOUND_GOT_GOODIE);
-  world()->increaseScore(goodie.score());
+  goodie.setVisible(true);                 // activate
+  goodie.die();                            // set state to dead
+  world()->playSound(goodie.sound());      // play sound
+  world()->increaseScore(goodie.score());  // increase score
 }
 
 void TunnelMan::move(int key) {
@@ -285,11 +293,11 @@ void Boulder::doSomething() {
   }
 }
 
-bool Boulder::onEarth() {
+bool Boulder::onEarth() const {
   // one row under the boulder
   const Position bottomLeft(getX(), getY() - 1);
   const Position topRight(getX() + 4, getY());
-  return world()->checkEarth(bottomLeft, topRight, false) > 0;
+  return world()->hasEarth(bottomLeft, topRight);
 }
 
 bool Boulder::hitBoulder() {
@@ -326,7 +334,7 @@ void Squirt::doSomething() {
 
   const auto p = directionalPosition(1, getDirection());
   const Position topRight{p.x + 4, p.y + 4};
-  if (world()->checkEarth(p, topRight, false) > 0) {
+  if (world()->hasEarth(p, topRight)) {
     m_distance = 0;  // the squirt hits on earth, dies
     return;
   }
@@ -344,38 +352,6 @@ void Squirt::doSomething() {
 
 //////////////////////////////////////////////////////////////////////////////
 // Barrel
-void Barrel::doSomething() {
-  if (!alive()) {
-    return;
-  }
-
-  double awayFromPlayer = distance(world()->getPlayer());
-  if (!isVisible() && (awayFromPlayer <= 4)) {
-    // if the barrel is not currently visible, it can be discovered by a
-    // TunnelMan if the TunnelMan is within a radius of 4.0 of it(<= 4.00 units
-    // away)
-    setVisible(true);
-    return;
-  }
-  if (awayFromPlayer <= 3) {
-    // if the Barrel is within a radius of 3.0(<= 3.00 units away) from the
-    // TunnelMan, then the Barrel will activate, and:
-    //  a. The Barrel must set its state to dead
-    //
-    //  b. The Barrel must play a sound effect to indicate that the player
-    //  picked up the Goodie : SOUND_FOUND_OIL.
-    //
-    //  c. The Barrel must increase the player¡¯s score by 1000 points.
-    //
-    //  d. If necessary, the Barrel may inform the StudentWorld object that it
-    //  was picked up. Once all Barrels on the level have been picked up, the
-    //  player finishes the level and may advance to the next level.
-    setVisible(true);
-    m_alive = false;
-    world()->playSound(SOUND_FOUND_OIL);
-    world()->increaseScore(1000);
-  }
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // Gold
@@ -398,32 +374,7 @@ void Gold::doSomething() {
 
   decreaseLife();
 
-  TunnelMan& player = world()->getPlayer();
-  double awayFromPlayer = distance(player);
-  if (!isVisible() && (awayFromPlayer <= 4)) {
-    //  if the Gold Nugget is not currently visible AND the TunnelMan is within
-    //  a radius of 4.0 of it(<= 4.00 units away), then the Gold Nugget must
-    //  make itself visible
-    setVisible(true);
-    return;
-  }
-
-  if (awayFromPlayer <= 3 && pickable() == Pickable::player) {
-    // if the Gold Nugget is pickup-able by the TunnelMan and it is within a
-    // radius of 3.0(<= 3.00 units away) from the TunnelMan, then the Gold
-    // Nugget will activate, and:
-    //  a.The Gold Nugget must set its state to dead
-    //
-    //  b.The Gold Nugget must play a sound effect to indicate that the
-    //     TunnelMan picked up the Goodie : SOUND_GOT_GOODIE.
-    //
-    //  c.The Gold Nugget increases the player¡¯s score by 10 points
-    //
-    //  d.The Gold Nugget must tell the TunnelMan object that it justreceived
-    //     a new Nugget so it can update its inventory.
-    setVisible(true);
-    player.pickGoodie(*this);
-  }
+  detectPlayer();
 
   if (pickable() == Pickable::protester) {
     // if the Gold Nugget is pickup-able by Protesters and it is within a radius
@@ -480,56 +431,40 @@ void Protester::doSomething() {
   }
 
   resetTtw();
+  --m_tts;  // decrease non-resting ticks for shouting
+  --m_ttt;  // decrease non-resting ticks for turning
 
   if (m_leaving) {
-    // TODO leave the oil field
     exit();
     return;
   }
 
   TunnelMan& player = world()->getPlayer();
   double awayFromPlayer = distance(player);
-  if (awayFromPlayer <= 4 && faceToPlayer(player) && m_silent <= 0) {
+  if (awayFromPlayer <= 4 && faceToPlayer(player) && m_tts <= 0) {
     shout(player);
     return;
   }
 
-  // if if the Protester:
-  //    a.Is in a straight horizontal or vertical line of sight to the
-  //    TunnelMan(even if the Regular Protester isn¡¯t currently facing the
-  //    TunnelMan), and
-  //    b.Is more than 4 units away from the TunnelMan, and
-  //    c.Could actually move the entire way to the TunnelMan with no Earth or
-  //    Boulders blocking its path  const auto dir = straightToPlayer(player);
-  auto dir = straightToPlayer(player);
-  if (dir != Direction::none) {
-    setDirection(dir);  // turn to the player
-    const auto target = directionalPosition(1, dir);
-    moveTo(target.x, target.y);  // move 1 step forward to the player
-    m_stepsForward = 0;  // set its numSquaresToMoveInCurrentDirection value to
-                         // zero, forcing it to pick a new direction/distance to
-                         // move during its next non-resting tick
+  if (chasePlayer()) {
     return;
   }
 
-  --m_stepsForward;
-  // if the Protester has finished walking numSquaresToMoveInCurrentDirection
-  // steps in its currently-selected direction
-  if (m_stepsForward <= 0) {
-    // pick a new direction which is moveable
-    Direction dir = none;
-    do {
-      dir = static_cast<Direction>(rand() % 4 + 1);
-    } while (!moveable(dir));
+  randomWalk();
+}
 
-    recalculateSteps();
-    setDirection(dir);
-    auto target = directionalPosition(1, dir);
-    moveTo(target.x, target.y);
+void Protester::randomWalk() {
+  if (m_stepsForward > 0 && !moveable(getDirection())) {
+    // the Protester is blocked by either Earth or Boulder
+    m_stepsForward = 0;
+    return;
   }
 
-  // sitting in a intersection
-  {}
+  // decide the direction of the next step and move
+  newDirection();
+  auto target = directionalPosition(1, getDirection());
+  moveTo(target.x, target.y);
+  --m_stepsForward;
 }
 
 void Protester::resetTtw() {
@@ -556,21 +491,21 @@ bool Protester::faceToPlayer(const TunnelMan& player) const {
 void Protester::shout(TunnelMan& player) {
   world()->playSound(SOUND_PROTESTER_YELL);
   player.annoyed(2);
-  m_silent = 15;
+  m_tts = 15;
 }
 
-GraphObject::Direction Protester::straightToPlayer(const TunnelMan& player) {
+GraphObject::Direction Protester::straightToPlayer(
+    const TunnelMan& player) const {
   if (distance(player) < 4)
     return Direction::none;
 
   auto bl = Position(min(getX(), player.getX()), min(getY(), player.getY()));
   auto tr =
       Position(max(getX(), player.getX()) + 4, max(getY(), player.getY()) + 4);
-  if (world()->checkEarth(bl, tr, false) > 0) {
-    // any Earth object in the rectangle
+  if (world()->hasEarth(bl, tr)) {
     return Direction::none;
   }
-  auto& boulders = world()->getActors(TID_BARREL);
+  auto& boulders = world()->getActors(TID_BOULDER);
   if (any_of(boulders.begin(), boulders.end(),
              [&, bl, tr](unique_ptr<Actor> const& actor) {
                return actor->overlap(bl, tr);
@@ -580,7 +515,7 @@ GraphObject::Direction Protester::straightToPlayer(const TunnelMan& player) {
   }
 
   if (getX() == player.getX()) {
-    getY() < player.getY() ? Direction::up : Direction::down;
+    return getY() < player.getY() ? Direction::up : Direction::down;
   }
 
   if (getY() == player.getY()) {
@@ -590,20 +525,79 @@ GraphObject::Direction Protester::straightToPlayer(const TunnelMan& player) {
   return Direction::none;
 }
 
-bool Protester::moveable(const Direction& dir) {
+void Protester::newDirection() {
+  vector<Direction> choices;
+
+  if (m_ttt <= 0) {
+    // The Regular Protester hasn¡¯t made a perpendicular turn in the last 200
+    // nonresting ticks
+    if (getDirection() <= Direction::down) {
+      choices.push_back(Direction::left);
+      choices.push_back(Direction::right);
+    } else {
+      choices.push_back(Direction::up);
+      choices.push_back(Direction::down);
+    }
+  } else if (m_stepsForward <= 0) {
+    // If the Regular Protester has finished walking m_stepsForward steps in its
+    // currently-selected direction
+    choices.push_back(Direction::up);
+    choices.push_back(Direction::down);
+    choices.push_back(Direction::left);
+    choices.push_back(Direction::right);
+  }
+
+  // remove invalid directions
+  choices.erase(remove_if(choices.begin(), choices.end(),
+                          [this](const auto& dir) { return !moveable(dir); }),
+                choices.end());
+  if (choices.empty()) {
+    // if not the time to turn, go forward
+    return;
+  }
+
+  // randomly turn to a valid direction
+  const auto dir = choices[rand() % choices.size()];
+  if (getDirection() <= Direction::down && dir > Direction::down ||
+      getDirection() > Direction::down && dir <= Direction::down) {
+    m_ttt = 200;  // perpendicular turn
+  }
+  setDirection(dir);
+  recalculateSteps();
+}
+
+bool Protester::moveable(const Direction& dir) const {
   const auto target = directionalPosition(1, dir);
   return (world()->validPosition(target) &&
-          world()->checkEarth(target, target + 4, false) == 0 &&
+          !world()->hasEarth(target, target + 4) &&
           world()->noBoulder(target));  // no earth no boulder in front
 }
 
-/*
 //////////////////////////////////////////////////////////////////////////////
 // RegularProtester
-void RegularProtester::doSomething() {
-  // TODO
+bool RegularProtester::chasePlayer() {
+  // if the Protester:
+  //    a.Is in a straight horizontal or vertical line of sight to the
+  //    TunnelMan(even if the Regular Protester isn¡¯t currently facing the
+  //    TunnelMan), and
+  //    b.Is more than 4 units away from the TunnelMan, and
+  //    c.Could actually move the entire way to the TunnelMan with no Earth or
+  //    Boulders blocking its path  const auto dir = straightToPlayer(player);
+  auto dir = straightToPlayer(world()->getPlayer());
+  if (dir != Direction::none) {
+    setDirection(dir);  // turn to the player
+    const auto target = directionalPosition(1, dir);
+    moveTo(target.x, target.y);  // move 1 step forward to the player
+    resetSteps();  // set its numSquaresToMoveInCurrentDirection value to
+                   // zero, forcing it to pick a new direction/distance to
+                   // move during its next non-resting tick
+    return true;
+  }
+
+  return false;  // the player is not detected
 }
 
+/*
 //////////////////////////////////////////////////////////////////////////////
 // HardcoreProtester
 void HardcoreProtester::doSomething() {

@@ -58,20 +58,26 @@ class StudentWorld : public GameWorld {
   int discover(int tid, int radius);
 
   /**
-   * @brief count how many earth object in the specified area, remove them if
-   * the clean flag is true
+   * @brief remove any Earth object in the specified area
    * @param bottomLeft, the coordinates of the bottom left corner of the square,
    * inclusive
    * @param topRight, the coordinates of the top right corner of the square,
    * exclusive
-   * @param clean, delete the earth object if the flag is true
-   * @return number of earth objects been removed
    */
-  int checkEarth(const Position& bottomLeft,
-                 const Position& topRight,
-                 bool clean = true);
+  bool removeEarth(const Position& bottomLeft, const Position& topRight);
+
+  /**
+   * @brief check any Earth object in the specified area
+   * @param bottomLeft, the coordinates of the bottom left corner of the square,
+   * inclusive
+   * @param topRight, the coordinates of the top right corner of the square,
+   * exclusive
+   * @return true if there are Earth objects
+   */
+  bool hasEarth(const Position& bottomLeft, const Position& topRight) const;
 
   ACTORS& getActors(int tid) { return m_actors.at(tid); };
+  const ACTORS& getActors(int tid) const { return m_actors.at(tid); };
   TunnelMan& getPlayer() { return *m_player; }
   const TunnelMan& getPlayer() const { return *m_player; }
 

@@ -404,3 +404,5 @@ FodyWeavers.xsd
 */*/build/
 */*/.vscode
 
+/project4/doc/html
+/project4/doc/latex
