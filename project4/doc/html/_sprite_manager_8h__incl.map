@@ -1,0 +1,27 @@
+<map id="E:/anteng/ucla/cs32/bochf/cs32/project4/TunnelMan/TunnelMan/SpriteManager.h" name="E:/anteng/ucla/cs32/bochf/cs32/project4/TunnelMan/TunnelMan/SpriteManager.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="431,5,587,80"/>
+<area shape="rect" id="Node000002" href="$freeglut_8h.html" title=" " alt="" coords="180,128,254,155"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="432,72,269,126,267,121,430,67"/>
+<area shape="rect" id="Node000009" href="$_game_constants_8h.html" title=" " alt="" coords="278,128,404,155"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="446,83,377,123,374,118,444,78"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="428,128,499,155"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="494,81,478,115,473,113,489,79"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="524,128,588,155"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="529,79,546,113,541,116,524,81"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="612,128,665,155"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="560,78,611,117,608,121,557,83"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="689,128,735,155"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="587,78,676,120,674,125,585,83"/>
+<area shape="rect" id="Node000003" href="$freeglut__std_8h.html" title=" " alt="" coords="106,203,205,229"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="208,157,178,193,174,189,204,153"/>
+<area shape="rect" id="Node000007" href="$freeglut__ext_8h.html" title=" " alt="" coords="243,203,343,229"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="232,153,271,190,268,194,228,157"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,277,69,304"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="136,232,71,272,69,267,134,228"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="93,277,163,304"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="153,231,140,265,135,263,148,229"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="187,277,250,304"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="169,228,200,264,196,268,165,232"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="274,277,342,304"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="298,229,305,262,300,263,293,230"/>
+</map>

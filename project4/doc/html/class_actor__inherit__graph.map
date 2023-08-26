@@ -1,0 +1,29 @@
+<map id="Actor" name="Actor">
+<area shape="rect" id="Node000001" title=" " alt="" coords="325,357,463,747"/>
+<area shape="rect" id="Node000003" href="$class_boulder.html" title=" " alt="" coords="5,869,113,981"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="316,614,220,695,171,744,127,796,103,833,84,871,79,869,98,830,123,793,167,741,216,692,312,610"/>
+<area shape="rect" id="Node000004" href="$class_earth.html" title=" " alt="" coords="137,880,245,971"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="321,685,259,796,215,881,211,879,254,793,316,682"/>
+<area shape="rect" id="Node000005" href="$class_goodie.html" title=" " alt="" coords="269,805,377,1045"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="357,761,349,806,343,805,352,760"/>
+<area shape="rect" id="Node000010" href="$class_protester.html" title=" " alt="" coords="402,795,527,1056"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="436,760,443,795,437,796,431,761"/>
+<area shape="rect" id="Node000013" href="$class_squirt.html" title="class Squirt" alt="" coords="552,869,660,981"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="472,674,542,793,581,868,577,871,537,796,468,677"/>
+<area shape="rect" id="Node000014" href="$class_tunnel_man.html" title=" " alt="" coords="685,795,797,1056"/>
+<area shape="poly" id="edge13_Node000001_Node000014" title=" " alt="" coords="476,608,575,691,627,740,673,793,687,811,683,814,669,796,623,744,572,695,472,612"/>
+<area shape="rect" id="Node000002" href="$class_graph_object.html" title=" " alt="" coords="329,5,459,309"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="397,323,397,358,391,358,391,323"/>
+<area shape="rect" id="Node000006" href="$class_barrel.html" title="class Barrel" alt="" coords="18,1115,85,1227"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="261,1055,258,1058,237,1072,217,1080,178,1084,140,1087,120,1094,98,1106,86,1117,82,1113,95,1102,117,1089,138,1082,178,1079,215,1075,235,1068,255,1054,258,1051"/>
+<area shape="rect" id="Node000007" href="$class_gold.html" title="class Gold" alt="" coords="109,1104,217,1237"/>
+<area shape="poly" id="edge6_Node000005_Node000007" title=" " alt="" coords="264,1049,259,1058,219,1110,215,1107,254,1054,260,1046"/>
+<area shape="rect" id="Node000008" href="$class_sonar.html" title="class Sonar" alt="" coords="241,1125,307,1216"/>
+<area shape="poly" id="edge7_Node000005_Node000008" title=" " alt="" coords="299,1060,285,1126,280,1125,294,1059"/>
+<area shape="rect" id="Node000009" href="$class_water_pool.html" title="class WaterPool" alt="" coords="331,1125,423,1216"/>
+<area shape="poly" id="edge8_Node000005_Node000009" title=" " alt="" coords="355,1059,370,1125,365,1126,350,1060"/>
+<area shape="rect" id="Node000011" href="$class_hardcore_protester.html" title="class HardcoreProtester" alt="" coords="447,1115,583,1227"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="497,1069,507,1114,501,1115,492,1070"/>
+<area shape="rect" id="Node000012" href="$class_regular_protester.html" title="class RegularProtester" alt="" coords="607,1115,735,1227"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="538,1050,541,1054,568,1079,597,1102,610,1113,606,1117,594,1106,564,1083,537,1058,534,1053"/>
+</map>

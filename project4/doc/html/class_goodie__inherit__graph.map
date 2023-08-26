@@ -1,0 +1,15 @@
+<map id="Goodie" name="Goodie">
+<area shape="rect" id="Node000001" title=" " alt="" coords="151,795,259,1035"/>
+<area shape="rect" id="Node000004" href="$class_barrel.html" title="class Barrel" alt="" coords="5,1093,72,1205"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="145,1003,86,1084,74,1101,70,1098,82,1081,141,999"/>
+<area shape="rect" id="Node000005" href="$class_gold.html" title="class Gold" alt="" coords="97,1083,205,1216"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="177,1049,169,1084,163,1082,172,1048"/>
+<area shape="rect" id="Node000006" href="$class_sonar.html" title="class Sonar" alt="" coords="229,1104,294,1195"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="240,1048,253,1104,248,1105,235,1049"/>
+<area shape="rect" id="Node000007" href="$class_water_pool.html" title="class WaterPool" alt="" coords="318,1104,410,1195"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="269,1005,336,1103,332,1106,265,1008"/>
+<area shape="rect" id="Node000002" href="$class_actor.html" title=" " alt="" coords="137,357,274,747"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="208,761,208,795,203,795,203,761"/>
+<area shape="rect" id="Node000003" href="$class_graph_object.html" title=" " alt="" coords="141,5,270,309"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="208,323,208,358,203,358,203,323"/>
+</map>
