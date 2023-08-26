@@ -226,8 +226,11 @@ void StudentWorld::onBoulderFall(const Boulder& boulder) {
     m_player->annoyed(100);
   }
   for (const auto& protester : m_actors.at(TID_PROTESTER)) {
-    if (protester->overlap(boulder))
+    if (protester->overlap(boulder)) {
       protester->annoyed(100);
+      // add 500 score to the player
+      increaseScore(500);
+    }
   }
 }
 
@@ -270,15 +273,14 @@ void StudentWorld::updateDisplayText() {
   ///  For example, between the ¡°000100¡± of the score and the ¡°L¡± in ¡°Level¡±
   ///  there must be exactly two spaces.
 
-  int health = 100;
-
   ostringstream oss;
   oss << "Scr: " << setw(6) << setfill('0') << getScore()
       << "  Lvl: " << setw(2) << setfill(' ') << getLevel()
-      << "  Lives: " << setw(1) << getLives() << "  Hlth: " << setw(3) << health
-      << "%  Wtr: " << setw(2) << m_player->waterUnits() << "  Gld: " << setw(2)
-      << m_player->golds() << "  Sonar: " << setw(2) << m_player->sonarCharges()
-      << "  Oil Left: " << setw(2) << m_actors[TID_BARREL].size();
+      << "  Lives: " << setw(1) << getLives() << "  Hlth: " << setw(3)
+      << m_player->health() << "%  Wtr: " << setw(2) << m_player->waterUnits()
+      << "  Gld: " << setw(2) << m_player->golds() << "  Sonar: " << setw(2)
+      << m_player->sonarCharges() << "  Oil Left: " << setw(2)
+      << m_actors[TID_BARREL].size();
   setGameStatText(oss.str());
 }
 

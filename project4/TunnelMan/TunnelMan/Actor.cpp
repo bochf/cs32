@@ -62,18 +62,6 @@ double Actor::distance(const Actor& other) const {
   return distance(other.bottomLeft());
 }
 
-bool Actor::inCircle(const Position& pos, double r) const {
-  Position center(bottomLeft() + getSize() * 2);
-  return len(center, pos) <= r;
-}
-
-bool Actor::inCircle(const Actor& other, double r) const {
-  Position c1(bottomLeft() + getSize() * 2);
-  Position c2(other.bottomLeft() + other.getSize() * 2);
-
-  return len(c1, c2) > other.radius() + r;
-}
-
 Position Actor::directionalPosition(int dist, const Direction& dir) const {
   switch (dir) {
     case Direction::left:
@@ -239,9 +227,9 @@ void TunnelMan::quit() {
 void TunnelMan::scanField() {
   if (m_sonarCharges > 0) {
     // search oil barrels
-    world()->discover(TID_BARREL, 64);
+    world()->discover(TID_BARREL, 12);
     // search gold nuggets
-    world()->discover(TID_GOLD, 64);
+    world()->discover(TID_GOLD, 12);
     --m_sonarCharges;
   }
 }
@@ -323,8 +311,13 @@ void Squirt::doSomething() {
   // shoot a protester
   for (auto const& protester : world()->getActors(TID_PROTESTER)) {
     if (protester->overlap(*this)) {
-      protester->annoyed(2);  // hurt a protester with 2 points
       m_distance = 0;         // hit a protester, the squirt dies
+      protester->annoyed(2);  // hurt a protester with 2 points
+      if (protester->getID() == TID_PROTESTER) {
+        world()->increaseScore(100);
+      } else {
+        world()->increaseScore(250);
+      }
     }
   }
 
@@ -351,9 +344,6 @@ void Squirt::doSomething() {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Barrel
-
-//////////////////////////////////////////////////////////////////////////////
 // Gold
 Gold::Gold(StudentWorld* world, const Position& pos, const Pickable& pickable)
     : Goodie(world,
@@ -362,10 +352,6 @@ Gold::Gold(StudentWorld* world, const Position& pos, const Pickable& pickable)
              pickable == Pickable::player ? -1 : 100,
              pickable == Pickable::player ? false : true),
       m_pickable(pickable) {}
-
-int Gold::score() const {
-  return m_pickable == Pickable::player ? 10 : 25;
-}
 
 void Gold::doSomething() {
   if (!alive()) {
@@ -393,9 +379,8 @@ void Gold::doSomething() {
     for (auto const& protester : world()->getActors(TID_PROTESTER)) {
       if (distance(*protester) <= 3) {
         die();
-        world()->playSound(SOUND_PROTESTER_FOUND_GOLD);
-        world()->increaseScore(25);
-        protester->pickGold();
+
+        protester->pickupGold();
       }
     }
   }
@@ -421,6 +406,22 @@ WaterPool::WaterPool(StudentWorld* world, const Position& pos)
 
 //////////////////////////////////////////////////////////////////////////////
 // Protester
+void Protester::annoyed(int points) {
+  if (m_leaving) {
+    // the Protester can't be annoyed if leaving the field
+    return;
+  }
+
+  m_hitPoints -= points;
+  world()->playSound(SOUND_PROTESTER_ANNOYED);
+  m_ttw = max(50U, 100 - world()->getLevel() * 10);
+  if (m_hitPoints <= 0) {
+    m_leaving = true;
+    world()->playSound(SOUND_PROTESTER_GIVE_UP);
+    m_ttw = 0;
+  }
+}
+
 void Protester::doSomething() {
   if (!alive()) {
     return;
@@ -463,7 +464,11 @@ void Protester::randomWalk() {
   // decide the direction of the next step and move
   newDirection();
   auto target = directionalPosition(1, getDirection());
-  moveTo(target.x, target.y);
+  if (world()->validPosition(target)) {
+    moveTo(target.x, target.y);
+  } else {
+    resetSteps();
+  }
   --m_stepsForward;
 }
 
@@ -471,7 +476,28 @@ void Protester::resetTtw() {
   m_ttw = max(0, 3 - static_cast<int>(world()->getLevel()) / 4);
 }
 
-void Protester::exit() {}
+void Protester::turnTo(const Position& pos) {
+  if (pos.x > getX())
+    setDirection(Direction::right);
+  else if (pos.x < getX())
+    setDirection(Direction::left);
+  else if (pos.y > getY())
+    setDirection(Direction::up);
+  else if (pos.y < getY())
+    setDirection(Direction::down);
+}
+
+void Protester::exit() {
+  vector<Position> path;
+  findWay(path, Position(60, 60), VIEW_HEIGHT * VIEW_WIDTH);
+
+  if (!path.empty()) {
+    auto const& next = path.front();
+
+    turnTo(next);
+    moveTo(next.x, next.y);
+  }
+}
 
 bool Protester::faceToPlayer(const TunnelMan& player) const {
   switch (getDirection()) {
@@ -492,6 +518,46 @@ void Protester::shout(TunnelMan& player) {
   world()->playSound(SOUND_PROTESTER_YELL);
   player.annoyed(2);
   m_tts = 15;
+}
+
+void Protester::findWay(vector<Position>& path,
+                        const Position& target,
+                        int limit) const {
+  // store the distance to each point, -1 means unvisited
+  array<array<short, VIEW_HEIGHT>, VIEW_WIDTH> matrix;
+  for (int x = 0; x < VIEW_WIDTH; ++x)
+    for (int y = 0; y < VIEW_HEIGHT; ++y)
+      matrix[x][y] = -1;
+  matrix[getX()][getY()] = 0;  // start point is 0
+  queue<Position> visited;
+  visited.push(bottomLeft());
+
+  while (!visited.empty()) {
+    auto pos = visited.front();  // get the first element from the queue
+    visited.pop();
+
+    if (pos == target) {
+      // get the path from the matrix reversely, terminate the loop when reaches
+      // the destination
+      getPath(path, matrix, target);
+      return;
+    }
+
+    // get the distance of the current point
+    short current = matrix[pos.x][pos.y];
+    if (current > limit) {
+      return;
+    }
+    for (int i = 0; i < 4; ++i) {
+      auto newPos = Position(pos.x + (i - 2) % 2, pos.y + (i - 1) % 2);
+      if (world()->validPosition(newPos) && matrix[newPos.x][newPos.y] < 0 &&
+          !world()->hasEarth(newPos, newPos + 4) &&
+          world()->noBoulder(newPos)) {
+        visited.push(newPos);
+        matrix[newPos.x][newPos.y] = current + 1;
+      }
+    }
+  }
 }
 
 GraphObject::Direction Protester::straightToPlayer(
@@ -529,7 +595,7 @@ void Protester::newDirection() {
   vector<Direction> choices;
 
   if (m_ttt <= 0) {
-    // The Regular Protester hasn¡¯t made a perpendicular turn in the last 200
+    // The Protester hasn¡¯t made a perpendicular turn in the last 200
     // nonresting ticks
     if (getDirection() <= Direction::down) {
       choices.push_back(Direction::left);
@@ -573,6 +639,30 @@ bool Protester::moveable(const Direction& dir) const {
           world()->noBoulder(target));  // no earth no boulder in front
 }
 
+void Protester::getPath(
+    vector<Position>& path,
+    const std::array<std::array<short, VIEW_HEIGHT>, VIEW_WIDTH>& matrix,
+    const Position& target) const {
+  if (target == bottomLeft()) {
+    return;  // origin == dest
+  }
+
+  for (int i = 0; i < 4; ++i) {
+    short current = matrix[target.x][target.y];
+    if (current < 0) {
+      // something wrong, we traveral back to an unvisited location
+      return;
+    }
+
+    int prevX = target.x + (i - 2) % 2;  // 0, -1, 0, 1
+    int prevY = target.y + (i - 1) % 2;  // -1, 0, 1, 0
+    if (matrix[prevX][prevY] + 1 == matrix[target.x][target.y]) {
+      getPath(path, matrix, Position(prevX, prevY));
+      path.emplace_back(target);
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // RegularProtester
 bool RegularProtester::chasePlayer() {
@@ -597,10 +687,45 @@ bool RegularProtester::chasePlayer() {
   return false;  // the player is not detected
 }
 
-/*
+void RegularProtester::pickupGold() {
+  world()->playSound(SOUND_PROTESTER_FOUND_GOLD);
+  world()->increaseScore(25);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // HardcoreProtester
-void HardcoreProtester::doSomething() {
-  // TODO
+bool HardcoreProtester::chasePlayer() {
+  const auto& player = world()->getPlayer();
+  vector<Position> path;
+
+  // check the TunnelMan is within 8 steps reachable position
+  // if so, move forward to it
+  findWay(path, player.bottomLeft(), 8);
+  if (!path.empty()) {
+    auto const& next = path.front();
+    turnTo(next);
+    moveTo(next.x, next.y);
+    resetSteps();
+    return true;
+  }
+
+  // if the TunnelMan can be straight seen and no block
+  // go to that direction
+  auto dir = straightToPlayer(world()->getPlayer());
+  if (dir != Direction::none) {
+    setDirection(dir);  // turn to the player
+    const auto target = directionalPosition(1, dir);
+    moveTo(target.x, target.y);  // move 1 step forward to the player
+    resetSteps();  // set its numSquaresToMoveInCurrentDirection value to
+                   // zero, forcing it to pick a new direction/distance to
+                   // move during its next non-resting tick
+    return true;
+  }
+
+  return false;
 }
-*/
+
+void HardcoreProtester::pickupGold() {
+  world()->playSound(SOUND_PROTESTER_FOUND_GOLD);
+  world()->increaseScore(50);
+}

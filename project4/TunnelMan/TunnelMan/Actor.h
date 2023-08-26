@@ -4,6 +4,7 @@
 #include "GraphObject.h"
 
 #include <memory>
+#include <queue>
 #include <vector>
 
 #define SQUARE(x) (x) * (x)
@@ -51,7 +52,7 @@ class Actor : public GraphObject {
    * @brief actor is annoyed
    * @param deduction
    */
-  virtual void annoyed(int deduction){};
+  virtual void annoyed(int points){};
 
   /**
    * @brief check the actor is alive or not
@@ -62,7 +63,9 @@ class Actor : public GraphObject {
   /**
    * @brief an actor pickup a gold
    */
-  virtual void pickGold() {}
+  virtual void pickupGold() {
+    // to be overrided in sub classes, the default method is no-op
+  }
 
   Position bottomLeft() const { return Position(getX(), getY()); }
   Position topRight() const { return bottomLeft() + getSize() * 4; }
@@ -103,24 +106,6 @@ class Actor : public GraphObject {
    * @return the length
    */
   double distance(const Actor& other) const;
-
-  /**
-   * @brief check a position in the circle originating at the center of the
-   * object with radius r
-   * @param pos the coordinates of the position
-   * @param r the radius
-   * @return true if the point in side the circle
-   */
-  bool inCircle(const Position& pos, double r) const;
-
-  /**
-   * @brief check any of a unit square of an object falls into the circle
-   * originating at the center of the object with radius r
-   * @param other the object
-   * @param r the radius
-   * @return true if the other object's area overlaps with the circle
-   */
-  bool inCircle(const Actor& other, double r) const;
 
  protected:
   StudentWorld* world() { return m_world; }
@@ -228,7 +213,7 @@ class Gold : public Goodie {
 
   void doSomething() final;
 
-  int score() const final;
+  int score() const final { return 10; }
   Pickable pickable() const final { return m_pickable; }
 
  private:
@@ -278,6 +263,7 @@ class TunnelMan : public Actor {
   int waterUnits() const { return m_waterUnits; }
   int sonarCharges() const { return m_sonarCharges; }
   int golds() const { return m_golds; }
+  int health() const { return m_hitPoints * 10; }
 
   void pickupGoodie(Goodie& goodie);
 
@@ -332,13 +318,13 @@ class Boulder : public Actor {
   // Boulder state
   enum class State {
     stable,   // If the Boulder is currently in the stable state, then it must
-              // check to see if there is any Earth in the 4 squares immediately
-              // below it.
+              // check to see if there is any Earth in the 4 squares
+              // immediately below it.
     waiting,  // If none of the 4 squares beneath the Boulder have any Earth,
-              // then the Boulder must transition into a waiting state and keeps
-              // for 30 ticks
-    falling,  // If the Boulder is in a waiting state and 30 ticks have elapsed,
-              // then it must transition into a falling state
+              // then the Boulder must transition into a waiting state and
+              // keeps for 30 ticks
+    falling,  // If the Boulder is in a waiting state and 30 ticks have
+              // elapsed, then it must transition into a falling state
     dead      // The Boulder keeps falling down until it hit the bottom of the
               // field, or the earth, or another boulder
   };
@@ -368,8 +354,8 @@ class Boulder : public Actor {
 /**
  * @brief class Squirt
  * 1. Image ID: TID_WATER_SPURT
- * 2. A Squirt object's initial position depends on the TunnelMan's position and
- * direction
+ * 2. A Squirt object's initial position depends on the TunnelMan's position
+ * and direction
  * 3. A Squirt objects's direction is the same as the TunnelMan's direction
  * 4. A Squirt object starts off with an initial distance 4 squares
  * 5. Image depth: 1
@@ -414,8 +400,8 @@ class Barrel : public Goodie {
  * 3. starts off facing right
  * 4. visible: true
  * 5. pickup-able by TunnelMan
- * 6. starts off temporary state, exists max(100, 300 ¨C 10*current_level_number)
- * ticks
+ * 6. starts off temporary state, exists max(100, 300 ¨C
+ * 10*current_level_number) ticks
  * 7. depth: 2
  * 8. size: 1.0
  */
@@ -440,9 +426,9 @@ class Protester : public Actor {
     return !(m_leaving && getX() == 60 && getY() == 60);
   }
 
-  void doSomething() override;
+  void annoyed(int points) override;
 
-  void pickGold() final{};
+  void doSomething() override;
 
  protected:
   // move closer to the player if the TunnelMan is detected
@@ -452,18 +438,32 @@ class Protester : public Actor {
   // random walk without knowing where the TunnelMan is
   virtual void randomWalk();
 
+  /**
+   * @brief find a shortest path to the destination
+   * @param path, the list of locations to the destination
+   * @param target the destination
+   * @param limit, the max steps allowed
+   */
+  void findWay(std::vector<Position>& path,
+               const Position& target,
+               int limit) const;
+
   void resetSteps() { m_stepsForward = 0; }
 
   // if the protester is in a straight horizontal or vertical line of sight to
-  // the TunnelMan and more than 4 units away from the TunnelMan and no Earth or
-  // Boulder blocking its path, get the direction to TunnelMan.
-  // otherwise return Direction::none
+  // the TunnelMan and more than 4 units away from the TunnelMan and no Earth
+  // or Boulder blocking its path, get the direction to TunnelMan. otherwise
+  // return Direction::none
   Direction straightToPlayer(const TunnelMan& player) const;
+
+  // change the Protester direction to the new position
+  // the new poistion must be on the same row or same colomn
+  void turnTo(const Position& pos);
 
  private:
   bool m_leaving = false;  // the protester is leaving the oil field
   int m_hitPoints;
-  int m_ttw;      // ticks to wait between moves
+  int m_ttw;      // ticks to wait between moves, aka resting ticks
   int m_tts = 0;  // non-resting ticks to wait before shouting again
   int m_ttt =
       200;  // non-resting ticks to wait before making a perpendicular turn
@@ -490,8 +490,10 @@ class Protester : public Actor {
   // check the Protester can move one step on the direction
   bool moveable(const Direction& dir) const;
 
-  // turn 90 degrees at a intersection if turnable
-  Direction changeDirection();
+  void getPath(
+      std::vector<Position>& path,
+      const std::array<std::array<short, VIEW_HEIGHT>, VIEW_WIDTH>& matrix,
+      const Position& target) const;
 
   void recalculateSteps() {
     m_stepsForward = rand() % 53 + 8;  // a random number in [8, 60]
@@ -515,11 +517,11 @@ class RegularProtester : public Protester {
   explicit RegularProtester(StudentWorld* world)
       : Protester(world, TID_PROTESTER, 5){};
 
+  void pickupGold() final;
+
  protected:
   // turn to the TunnelMan if the TunnelMan can be straight seen
   bool chasePlayer() final;
-
-  // void doSomething() final;
 };
 
 /**
@@ -539,7 +541,11 @@ class HardcoreProtester : public Protester {
   explicit HardcoreProtester(StudentWorld* world)
       : Protester(world, TID_HARD_CORE_PROTESTER, 20){};
 
-  // void doSomething() final;
+  void pickupGold() final;
+
+ protected:
+  // Check the TunnelMan can be reached within 8 moves
+  bool chasePlayer() final;
 };
 
 #endif  // ACTOR_H_
